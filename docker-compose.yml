@@ -26,6 +26,8 @@ services:
       - DB_PORT=26257
       - DB_USER=donation_mgmt_app
       - DB_PASSWORD=""
+      - DB_DATABASE="donationsdb"
+      - DB_SCHEMA="donations"
       - DB_MIGRATE_USER=donation_mgmt_migrator
       - DB_MIGRATE_PASSWORD=""
     entrypoint: "/build/scripts/watch.sh"
