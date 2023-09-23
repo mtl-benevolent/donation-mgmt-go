@@ -13,6 +13,8 @@ services:
       - --insecure
 
   donation-mgmt:
+    depends_on:
+      - roach1
     build:
       context: .
       target: build
