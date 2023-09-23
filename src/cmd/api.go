@@ -8,9 +8,12 @@ func main() {
 	server := fiber.New()
 
 	server.Get("/hello", func(c *fiber.Ctx) error {
-		c.SendString("Hello World, from Fiber!")
-		return nil
+		err := c.SendString("Hello World, from Fiber!")
+		return err
 	})
 
-	server.Listen("0.0.0.0:8000")
+	err := server.Listen("0.0.0.0:8000")
+	if err != nil {
+		panic("Could not start server: " + err.Error())
+	}
 }
