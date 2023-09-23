@@ -1,0 +1,1 @@
+# donation-mgmt-go
