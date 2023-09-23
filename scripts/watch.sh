@@ -2,6 +2,7 @@
 set -e
 
 go install github.com/cosmtrek/air@v1.27.8
+go install github.com/go-delve/delve/cmd/dlv@latest
 make goose
 
 # apk add postgresql-client

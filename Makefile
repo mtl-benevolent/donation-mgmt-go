@@ -35,6 +35,15 @@ build:
 	@echo "Building the API"
 	@go build -o $(DIST_PATH)/api $(CMD_PATH)/api.go
 
+.PHONY: build_debug
+build_debug:
+	@echo "Building the API in debug mode"
+	@go build -gcflags="all=-N -l" -o $(DIST_PATH)/api $(CMD_PATH)/api.go
+
+.PHONY: debug
+debug:
+	@echo "Running the app"
+	dlv exec $(DIST_PATH)/api --headless --api-version 2 --continue --accept-multiclient --listen "0.0.0.0:18000"
 
 .PHONY: clean
 clean:

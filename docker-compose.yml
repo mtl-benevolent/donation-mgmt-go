@@ -23,6 +23,7 @@ services:
       - ".:/build"
     ports:
       - "8000:8000"
+      - "18000:18000"
     environment:
       - DB_HOST=roach1
       - DB_PORT=26257
