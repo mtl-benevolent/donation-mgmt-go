@@ -57,14 +57,14 @@ goose:
 .PHONY: db_up
 db_up: goose
 	@echo "Applying migrations"
-	@$$(go env GOPATH)/bin/goose -dir migrations -table "$(DB_NAME).$(DB_SCHEMA).goose_migrations" postgres $(DB_STRING) up
+	@$$(go env GOPATH)/bin/goose -dir migrations -table "$(DB_NAME).$(DB_SCHEMA).goose_migrations" -v postgres $(DB_STRING) up
 
 .PHONY: db_down
 db_down: goose
 	@echo "Reverting last migration"
-	@$$(go env GOPATH)/bin/goose -dir migrations -table "$(DB_NAME).$(DB_SCHEMA).goose_migrations" postgres $(DB_STRING) down
+	@$$(go env GOPATH)/bin/goose -dir migrations -table "$(DB_NAME).$(DB_SCHEMA).goose_migrations" -v postgres $(DB_STRING) down
 
 .PHONY: db_status
 db_status: goose
 	@echo "Querying migration status"
-	@$$(go env GOPATH)/bin/goose -dir migrations -table "$(DB_NAME).$(DB_SCHEMA).goose_migrations" postgres $(DB_STRING) status
+	@$$(go env GOPATH)/bin/goose -dir migrations -table "$(DB_NAME).$(DB_SCHEMA).goose_migrations" -v postgres $(DB_STRING) status
