@@ -1,1 +1,1 @@
-# donation-mgmt-go
+# Donation Management (Go)
