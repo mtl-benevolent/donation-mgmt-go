@@ -1,5 +1,17 @@
 version: '3.9'
 services:
+  roach1:
+    image: cockroachdb/cockroach:v22.2.14
+    volumes:
+      - ROACH1_DATA:/cockroach/cockroach-data
+      - ./db-dev-init/:/docker-entrypoint-initdb.d
+    ports:
+      - 26257:26257
+      - 8080:8080
+    command:
+      - start-single-node
+      - --insecure
+
   donation-mgmt:
     build:
       context: .
@@ -9,4 +21,14 @@ services:
       - ".:/build"
     ports:
       - "8000:8000"
+    environment:
+      - DB_HOST=roach1
+      - DB_PORT=26257
+      - DB_USER=donation_mgmt_app
+      - DB_PASSWORD=""
+      - DB_MIGRATE_USER=donation_mgmt_migrator
+      - DB_MIGRATE_PASSWORD=""
     entrypoint: "/build/scripts/watch.sh"
+
+volumes:
+  ROACH1_DATA:
