@@ -1,0 +1,25 @@
+{
+  "name": "donation-mgmt-go",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mtl-benevolent/donation-mgmt-go.git"
+  },
+  "keywords": [],
+  "author": "Gabriel Lemire",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mtl-benevolent/donation-mgmt-go/issues"
+  },
+  "homepage": "https://github.com/mtl-benevolent/donation-mgmt-go#readme",
+  "devDependencies": {
+    "prisma": "5.5.2"
+  },
+  "dependencies": {
+    "@prisma/client": "5.5.2"
+  }
+}

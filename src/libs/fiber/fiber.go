@@ -22,7 +22,7 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, appConfig *config.AppConfiguratio
 	})
 
 	go func() {
-		err := server.Listen(fmt.Sprintf("0.0.0.0:%d", appConfig.HttpPort))
+		err := server.Listen(fmt.Sprintf("0.0.0.0:%d", appConfig.HTTPPort))
 		if err != nil {
 			panic("Could not start server: " + err.Error())
 		}

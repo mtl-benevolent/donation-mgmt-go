@@ -1,18 +1,28 @@
-FROM golang:1.21-alpine AS deps
+FROM golang:1.21.4-bookworm AS deps
 
-RUN apk update && apk upgrade && \
-  apk add --no-cache git make bash
+ENV NODE_MAJOR=20
+
+RUN apt-get update && \
+  apt-get install git ca-certificates make curl gnupg && \
+  update-ca-certificates && \
+  mkdir -p /etc/apt/keyrings && \
+  curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+  echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
+  apt-get update && \
+  apt-get install nodejs -y
 
 WORKDIR /build
 
-COPY go.mod go.sum ./
+COPY go.mod go.sum package*.json ./
 
 RUN git init --quiet && \
-  go mod download
+  go mod download && \
+  npm ci
 
 FROM deps AS build
 
 WORKDIR /build
+ENV CGO_ENABLED=1
 
 COPY ./ ./
 

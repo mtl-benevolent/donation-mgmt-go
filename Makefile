@@ -1,37 +1,8 @@
 CMD_PATH = "src/cmd"
 DIST_PATH = "dist"
 
-DB_HOST := "${DB_HOST}"
-ifeq ($(DB_HOST), "")
-	DB_HOST := "localhost"
-endif
-
-DB_PORT := "${DB_PORT}"
-ifeq ($(DB_PORT), "")
-	DB_PORT := "26257"
-endif
-
-DB_MIGRATE_USER := "${DB_MIGRATE_USER}"
-ifeq ($(DB_MIGRATE_USER), "")
-	DB_MIGRATE_USER := "donation_mgmt_migrator"
-endif
-
-DB_MIGRATE_PASSWORD := "${DB_MIGRATE_PASSWORD}"
-
-DB_NAME := "${DB_NAME}"
-ifeq (${DB_NAME}, "")
-	DB_NAME := "donationsdb"
-endif
-
-DB_SCHEMA := "${DB_SCHEMA}"
-ifeq (${DB_SCHEMA}, "")
-	DB_SCHEMA := "donations"
-endif
-
-DB_STRING = "host=$(DB_HOST) port=$(DB_PORT) user=$(DB_MIGRATE_USER) password=$(DB_MIGRATE_PASSWORD) dbname=${DB_NAME} sslmode=disable"
-
 .PHONY: build
-build:
+build: generate
 	@echo "Building the API"
 	@go build -o $(DIST_PATH)/api $(CMD_PATH)/api.go
 
@@ -40,15 +11,28 @@ build_debug:
 	@echo "Building the API in debug mode"
 	@go build -gcflags="all=-N -l" -o $(DIST_PATH)/api $(CMD_PATH)/api.go
 
-.PHONY: debug
-debug:
-	@echo "Running the app"
-	dlv exec $(DIST_PATH)/api --headless --api-version 2 --continue --accept-multiclient --listen "0.0.0.0:18000"
+generate:
+	@echo "[INFO] Generating code..."
+	@go generate ./...
+
+schema.gen.sql: ./prisma/schema.prisma
+	@echo "[INFO] Generating SQL Schema from Prisma"
+	@npx prisma migrate diff --script --from-empty --to-schema-datamodel=./prisma/schema.prisma > schema.gen.sql
+
+.PHONY: sqlc
+sqlc:
+	@echo "[INFO] Installing sqlc"
+	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.23.0
+
+	@echo "Generating Data Access Layer using sqlc"
+	@$$(go env GOPATH)/bin/sqlc generate
 
 .PHONY: clean
 clean:
 	@echo "Cleaning up the build artifacts"
 	@rm -rf dist
+	@rm -rf **/*.gen.go
+	@rm -rf **/*.gen.sql
 
 .PHONY: lint
 lint:
@@ -57,23 +41,3 @@ lint:
 	
 	@echo "Linting code"
 	@$$(go env GOPATH)/bin/golangci-lint run ./...
-
-.PHONY: goose
-goose:
-	@echo "Installing Goose"
-	@go install github.com/pressly/goose/v3/cmd/goose@v3.15.0
-
-.PHONY: db_up
-db_up: goose
-	@echo "Applying migrations"
-	@$$(go env GOPATH)/bin/goose -dir migrations -table "$(DB_NAME).$(DB_SCHEMA).goose_migrations" -v postgres $(DB_STRING) up
-
-.PHONY: db_down
-db_down: goose
-	@echo "Reverting last migration"
-	@$$(go env GOPATH)/bin/goose -dir migrations -table "$(DB_NAME).$(DB_SCHEMA).goose_migrations" -v postgres $(DB_STRING) down
-
-.PHONY: db_status
-db_status: goose
-	@echo "Querying migration status"
-	@$$(go env GOPATH)/bin/goose -dir migrations -table "$(DB_NAME).$(DB_SCHEMA).goose_migrations" -v postgres $(DB_STRING) status

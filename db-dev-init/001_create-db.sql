@@ -1,14 +1,18 @@
-CREATE DATABASE IF NOT EXISTS donationsdb;
-CREATE SCHEMA IF NOT EXISTS donationsdb.donations;
+CREATE DATABASE donationsdb;
+CREATE SCHEMA donationsdb.donations;
 
 -- Creating the roles
-CREATE ROLE IF NOT EXISTS donations_rw;
-CREATE ROLE IF NOT EXISTS donations_migrators;
-CREATE ROLE IF NOT EXISTS donations_maintenance;
+CREATE ROLE donations_ro;
+CREATE ROLE donations_rw;
+CREATE ROLE donations_migrators;
+CREATE ROLE donations_maintenance;
+
+-- Setting up donations_ro role
+GRANT CONNECT ON DATABASE donationsdb TO donations_ro;
+GRANT USAGE ON SCHEMA donationsdb.donations TO donations_ro;
 
 -- Setting up donations_rw role
-GRANT CONNECT ON DATABASE donationsdb TO donations_rw;
-GRANT USAGE ON SCHEMA donationsdb.donations TO donations_rw;
+GRANT donations_ro TO donations_rw;
 
 -- Setting up donations_migrators role
 GRANT donations_rw TO donations_migrators;
@@ -21,13 +25,13 @@ GRANT CREATE ON DATABASE donationsdb TO donations_maintenance;
 GRANT SYSTEM VIEWACTIVITY, VIEWCLUSTERMETADATA TO donations_maintenance;
 
 -- Creating application user
-CREATE USER IF NOT EXISTS donation_mgmt_app LOGIN PASSWORD NULL;
+CREATE USER donation_mgmt_app WITH LOGIN PASSWORD NULL;
 GRANT donations_rw TO donation_mgmt_app;
 
 -- Creating migration user
-CREATE USER IF NOT EXISTS donation_mgmt_migrator LOGIN PASSWORD NULL;
+CREATE USER donation_mgmt_migrator WITH LOGIN PASSWORD NULL CREATEDB; -- Migrator receives the CREATEDB option to handle Prisma's ShadowDB;
 GRANT donations_migrators TO donation_mgmt_migrator;
 
 -- Creating maintenance user
-CREATE USER IF NOT EXISTS donation_mgmt_maintenance LOGIN PASSWORD NULL;
+CREATE USER donation_mgmt_maintenance LOGIN PASSWORD NULL;
 GRANT donations_maintenance TO donation_mgmt_maintenance;

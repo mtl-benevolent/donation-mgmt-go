@@ -1,7 +1,7 @@
 version: '3.9'
 services:
   roach1:
-    image: cockroachdb/cockroach:v22.2.14
+    image: cockroachdb/cockroach:v22.2.16
     volumes:
       - ROACH1_DATA:/cockroach/cockroach-data
       - ./db-dev-init/:/docker-entrypoint-initdb.d
@@ -25,14 +25,13 @@ services:
       - "8000:8000"
       - "18000:18000"
     environment:
+      - PG_MIGRATION_DB=postgresql://donation_mgmt_migrator@roach1:26257/donationsdb?schema=donations
       - DB_HOST=roach1
       - DB_PORT=26257
       - DB_USER=donation_mgmt_app
-      - DB_PASSWORD=""
-      - DB_NAME="donationsdb"
-      - DB_SCHEMA="donations"
-      - DB_MIGRATE_USER=donation_mgmt_migrator
-      - DB_MIGRATE_PASSWORD=""
+      - DB_PASSWORD=
+      - DB_NAME=donationsdb
+      - DB_SCHEMA=donations
     entrypoint: "/build/scripts/watch.sh"
 
 volumes:

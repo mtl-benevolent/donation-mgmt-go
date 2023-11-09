@@ -119,6 +119,12 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,windows,linux,visualstudiocode,go
 
+node_modules/
+
 dist/
 bin/
 tmp/
+
+.env
+*.gen.go
+*.gen.sql

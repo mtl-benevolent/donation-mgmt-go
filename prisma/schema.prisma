@@ -1,0 +1,122 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output = "../tmp/prisma-client"
+}
+
+datasource db {
+  provider = "cockroachdb"
+  url      = env("PG_MIGRATION_DB")
+}
+
+model Organization {
+  id String @id @db.Uuid @default(uuid())
+  name String
+  slug String @unique
+
+  created_at DateTime @db.Timestamptz() @default(now())
+  archived_at DateTime? @db.Timestamptz()
+
+  donations Donation[]
+  
+  @@map("organizations")
+}
+
+enum Enviroment {
+  SANDBOX
+  LIVE
+}
+
+enum DonationType {
+  ONE_TIME
+  RECURRENT
+}
+
+enum DonationSource {
+  PAYPAL
+  CHEQUE
+  DIRECT_DEPOSIT
+  STOCKS
+  OTHER
+}
+
+model Donation {
+  id String @id @db.Uuid @default(uuid())
+
+  organization Organization @relation(fields: [organization_id], references: [id])
+  organization_id String @db.Uuid
+
+  external_id String?
+  environment Enviroment
+
+  fiscal_year Int @db.Int2
+  reason String?
+  type DonationType
+  source DonationSource
+
+  donor_firstname String?
+  donor_lastname_or_orgName String
+  donor_email String?
+  donor_address Json?
+
+  emit_receipt Boolean
+  send_by_email Boolean
+
+  created_at DateTime @db.Timestamptz() @default(now())
+  updated_at DateTime? @db.Timestamptz()
+  archived_at DateTime? @db.Timestamptz()
+
+  payments DonationPayment[]
+  events DonationEvent[]
+  comments DonationComment[]
+
+  @@map("donations")
+  @@index([organization_id, environment, fiscal_year])
+}
+
+model DonationPayment {
+  id String @id @db.Uuid @default(uuid())
+  external_id String?
+  
+  donation Donation @relation(fields: [donation_id], references: [id])
+  donation_id String @db.Uuid
+
+  amount BigInt
+  receipt_amount BigInt
+
+  received_at DateTime @db.Timestamptz()
+  created_at DateTime @db.Timestamptz() @default(now())
+  archived_at DateTime? @db.Timestamptz()
+
+  @@map("donation_payments")
+}
+
+model DonationEvent {
+  id String @id @db.Uuid() @default(uuid())
+  event_name String
+  details Json?
+
+  created_at DateTime @db.Timestamptz() @default(now())
+
+  donation Donation @relation(fields: [donation_id], references: [id])
+  donation_id String @db.Uuid()
+
+  @@map("donation_events")
+}
+
+model DonationComment {
+  id String @id @db.Uuid() @default(uuid())
+  
+  comment String
+  author String
+
+  created_at DateTime @db.Timestamptz() @default(now())
+  archived_at DateTime? @db.Timestamptz()
+
+  donation Donation @relation(fields: [donation_id], references: [id])
+  donation_id String @db.Uuid()
+
+  @@map("donation_comments")
+}
