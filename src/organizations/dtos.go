@@ -36,3 +36,23 @@ func (dto CreateOrganizationRequest) Validate() error {
 
 	return nil
 }
+
+type UpdateOrganizationRequest struct {
+	Name string `json:"name"`
+}
+
+func (dto UpdateOrganizationRequest) Validate() error {
+	err := ozzo.ValidateStruct(
+		&dto,
+		ozzo.Field(&dto.Name, ozzo.Required, ozzo.Length(1, 255)),
+	)
+
+	if err != nil {
+		return &apperrors.ValidationError{
+			EntityName: reflect.TypeOf(dto).Name(),
+			InnerError: err,
+		}
+	}
+
+	return nil
+}

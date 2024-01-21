@@ -5,16 +5,16 @@ import (
 	"donation-mgmt/src/apperrors"
 	"donation-mgmt/src/data_access"
 	"donation-mgmt/src/libs/db"
-	"errors"
+	"donation-mgmt/src/pagination"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type OrgService interface {
 	GetOrganizationBySlug(ctx context.Context, slug string) (data_access.Organization, error)
-	GetOrganizations(ctx context.Context) ([]data_access.Organization, error)
+	GetOrganizations(ctx context.Context, page pagination.PaginationOptions) (pagination.PaginatedResult[data_access.Organization], error)
 	CreateOrganization(ctx context.Context, params data_access.InsertOrganizationParams) (data_access.Organization, error)
+	UpdateOrganization(ctx context.Context, params data_access.UpdateOrganizationBySlugParams) (data_access.Organization, error)
 }
 
 type OrgServiceImpl struct {
@@ -48,25 +48,38 @@ func (s *OrgServiceImpl) GetOrganizationBySlug(ctx context.Context, slug string)
 	return org, nil
 }
 
-func (s *OrgServiceImpl) GetOrganizations(ctx context.Context) ([]data_access.Organization, error) {
+func (s *OrgServiceImpl) GetOrganizations(ctx context.Context, page pagination.PaginationOptions) (pagination.PaginatedResult[data_access.Organization], error) {
 	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
 	defer finalizer()
 
 	repo, err := uow.GetQuerier(ctx)
 	if err != nil {
-		return []data_access.Organization{}, err
+		return pagination.PaginatedResult[data_access.Organization]{}, err
 	}
 
-	orgs, err := repo.GetOrganizations(ctx)
+	orgs, err := repo.GetOrganizations(ctx, data_access.GetOrganizationsParams{
+		Offset: int32(page.Offset),
+		Limit:  int32(page.Limit),
+	})
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return []data_access.Organization{}, nil
+			return pagination.PaginatedResult[data_access.Organization]{}, nil
 		}
 
-		return []data_access.Organization{}, err
+		return pagination.PaginatedResult[data_access.Organization]{}, err
 	}
 
-	return orgs, nil
+	total, err := repo.GetOrganizationsCount(ctx)
+	if err != nil {
+		return pagination.PaginatedResult[data_access.Organization]{}, err
+	}
+
+	paginatedResult := pagination.PaginatedResult[data_access.Organization]{
+		Results: orgs,
+		Total:   int(total),
+	}
+
+	return paginatedResult, nil
 }
 
 func (s *OrgServiceImpl) CreateOrganization(ctx context.Context, params data_access.InsertOrganizationParams) (data_access.Organization, error) {
@@ -80,19 +93,31 @@ func (s *OrgServiceImpl) CreateOrganization(ctx context.Context, params data_acc
 
 	inserted, err := repo.InsertOrganization(ctx, params)
 	if err != nil {
-		var pgerr *pgconn.PgError
-		if errors.As(err, &pgerr) {
-			switch pgerr.Code {
-			case "23505":
-				return inserted, &apperrors.EntityAlreadyExistsError{
-					EntityName: "Organization",
-					EntityID:   params.Slug,
-				}
-			}
-		}
-
-		return inserted, err
+		return inserted, db.MapDBError(err, db.EntityIdentifier{
+			EntityName: "Organization",
+			EntityID:   params.Slug,
+		})
 	}
 
 	return inserted, nil
+}
+
+func (s *OrgServiceImpl) UpdateOrganization(ctx context.Context, params data_access.UpdateOrganizationBySlugParams) (data_access.Organization, error) {
+	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
+	defer finalizer()
+
+	repo, err := uow.GetQuerier(ctx)
+	if err != nil {
+		return data_access.Organization{}, err
+	}
+
+	updated, err := repo.UpdateOrganizationBySlug(ctx, params)
+	if err != nil {
+		return updated, db.MapDBError(err, db.EntityIdentifier{
+			EntityName: "Organization",
+			EntityID:   params.Slug,
+		})
+	}
+
+	return updated, nil
 }
