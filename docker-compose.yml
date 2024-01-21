@@ -1,7 +1,7 @@
 version: '3.9'
 services:
   roach1:
-    image: cockroachdb/cockroach:v22.2.16
+    image: cockroachdb/cockroach:latest
     volumes:
       - ROACH1_DATA:/cockroach/cockroach-data
       - ./db-dev-init/:/docker-entrypoint-initdb.d

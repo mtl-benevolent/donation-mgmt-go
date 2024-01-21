@@ -18,3 +18,17 @@ sql:
         output_querier_file_name: querier.gen.go
         output_copyfrom_file_name: copyfrom.gen.go
         output_files_suffix: .gen.go
+
+        overrides:
+        - db_type: "timestamptz"
+          go_type:
+            import: "time" 
+            type: Time
+            pointer: true
+          nullable: true
+        - db_type: "timestamptz"
+          go_type:
+            import: "time" 
+            type: Time
+            pointer: false
+          nullable: false

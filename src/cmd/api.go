@@ -4,7 +4,6 @@ import (
 	"context"
 	"donation-mgmt/src/config"
 	"donation-mgmt/src/libs/db"
-	"donation-mgmt/src/libs/fiber"
 	"fmt"
 	"os"
 
@@ -26,7 +25,6 @@ func main() {
 	appConfig := config.Bootstrap()
 
 	db.Bootstrap(gs, appConfig)
-	fiber.Bootstrap(gs, appConfig)
 
 	gs.WaitForShutdown()
 

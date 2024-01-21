@@ -12,7 +12,7 @@ datasource db {
 }
 
 model Organization {
-  id String @id @db.Uuid @default(uuid())
+  id BigInt @id @default(sequence())
   name String
   slug String @unique
 
@@ -43,10 +43,11 @@ enum DonationSource {
 }
 
 model Donation {
-  id String @id @db.Uuid @default(uuid())
+  id BigInt @id @default(sequence())
+  slug String @unique
 
   organization Organization @relation(fields: [organization_id], references: [id])
-  organization_id String @db.Uuid
+  organization_id BigInt
 
   external_id String?
   environment Enviroment
@@ -77,11 +78,11 @@ model Donation {
 }
 
 model DonationPayment {
-  id String @id @db.Uuid @default(uuid())
+  id BigInt @id @default(sequence())
   external_id String?
   
   donation Donation @relation(fields: [donation_id], references: [id])
-  donation_id String @db.Uuid
+  donation_id BigInt
 
   amount BigInt
   receipt_amount BigInt
@@ -94,20 +95,20 @@ model DonationPayment {
 }
 
 model DonationEvent {
-  id String @id @db.Uuid() @default(uuid())
+  id BigInt @id @default(sequence())
   event_name String
   details Json?
 
   created_at DateTime @db.Timestamptz() @default(now())
 
   donation Donation @relation(fields: [donation_id], references: [id])
-  donation_id String @db.Uuid()
+  donation_id BigInt
 
   @@map("donation_events")
 }
 
 model DonationComment {
-  id String @id @db.Uuid() @default(uuid())
+  id BigInt @id @default(sequence())
   
   comment String
   author String
@@ -116,7 +117,7 @@ model DonationComment {
   archived_at DateTime? @db.Timestamptz()
 
   donation Donation @relation(fields: [donation_id], references: [id])
-  donation_id String @db.Uuid()
+  donation_id BigInt
 
   @@map("donation_comments")
 }
