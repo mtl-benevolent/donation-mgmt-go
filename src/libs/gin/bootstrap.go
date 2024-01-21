@@ -45,6 +45,8 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConf
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 
+	// TODO: Implement error handling middleware
+
 	router.Any("/panic", func(ctx *gin.Context) {
 		panic("Test Panic")
 	})

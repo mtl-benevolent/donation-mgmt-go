@@ -35,7 +35,8 @@ func main() {
 	db.Bootstrap(gs, readyCheck, appConfig)
 
 	router := gin.Bootstrap(gs, readyCheck, appConfig)
-	organizations.RegisterRoutes(router)
+
+	organizations.Bootstrap(router)
 
 	readyCheck.StartPolling()
 	logger.Info("Application is ready")

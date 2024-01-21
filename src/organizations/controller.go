@@ -2,14 +2,12 @@ package organizations
 
 import (
 	"donation-mgmt/src/data_access"
-	"donation-mgmt/src/libs/db"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
 )
 
-func RegisterRoutes(router *gin.Engine) {
+func registerRoutes(router *gin.Engine) {
 	orgRouter := router.Group("/v1/organizations")
 
 	orgRouter.GET("", GetOrganizationsV1)
@@ -18,15 +16,8 @@ func RegisterRoutes(router *gin.Engine) {
 }
 
 func GetOrganizationsV1(c *gin.Context) {
-	db := data_access.New(db.DBPool())
-
-	orgs, err := db.GetOrganizations(c)
+	orgs, err := GetOrgService().GetOrganizations(c)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			c.JSON(http.StatusOK, []string{})
-			return
-		}
-
 		c.Error(err)
 		return
 	}
@@ -46,15 +37,8 @@ func CreateOrganizationV1(c *gin.Context) {
 func GetOrganizationBySlugV1(c *gin.Context) {
 	slug := c.Params.ByName("slug")
 
-	db := data_access.New(db.DBPool())
-
-	org, err := db.GetOrganizationBySlug(c, slug)
+	org, err := GetOrgService().GetOrganizationBySlug(c, slug)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			c.Status(http.StatusNotFound)
-			return
-		}
-
 		c.Error(err)
 		return
 	}
