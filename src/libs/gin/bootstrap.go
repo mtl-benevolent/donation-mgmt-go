@@ -43,7 +43,9 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConf
 
 	router.Use(middlewares.RequestIdMiddleware)
 	router.Use(gin.Logger())
-	router.Use(gin.Recovery())
+
+	router.Use(middlewares.ErrorHandler)
+	router.Use(gin.CustomRecovery(middlewares.PanicHandler))
 
 	// TODO: Implement error handling middleware
 
