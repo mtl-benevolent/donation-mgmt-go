@@ -15,7 +15,8 @@ import (
 )
 
 func main() {
-	logger := logger.BootstrapLogger()
+	appConfig := config.Bootstrap()
+	logger := logger.BootstrapLogger(appConfig)
 
 	gs := lifecycle.NewGracefulShutdown(context.Background())
 	readyCheck := lifecycle.NewReadyCheck()
@@ -29,8 +30,6 @@ func main() {
 			os.Exit(1)
 		}
 	}()
-
-	appConfig := config.Bootstrap()
 
 	db.Bootstrap(gs, readyCheck, appConfig)
 

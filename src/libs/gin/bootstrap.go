@@ -2,6 +2,7 @@ package gin
 
 import (
 	"context"
+	"donation-mgmt/src/apperrors"
 	"donation-mgmt/src/config"
 	"donation-mgmt/src/libs/gin/middlewares"
 	"donation-mgmt/src/libs/logger"
@@ -20,10 +21,21 @@ var router *gin.Engine
 func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConfig *config.AppConfiguration) *gin.Engine {
 	l := logger.ForComponent("Gin")
 
-	router = gin.Default()
+	router = gin.New()
 	if appConfig.AppEnvironment != config.Development {
 		gin.SetMode(gin.ReleaseMode)
 	}
+
+	router.NoRoute(func(c *gin.Context) {
+		dto := apperrors.RFC7807Error{
+			Type:   "EndpointNotFound",
+			Title:  "Endpoint not found",
+			Status: http.StatusNotFound,
+			Detail: "The requested endpoint was not found",
+		}
+
+		c.JSON(dto.Status, dto)
+	})
 
 	router.GET("/healthz", func(c *gin.Context) {
 		c.String(200, "Healthy!")
@@ -41,9 +53,9 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConf
 		ctx.JSON(200, rc.Explain())
 	})
 
-	router.Use(middlewares.RequestIdMiddleware)
-	router.Use(gin.Logger())
+	router.Use(middlewares.LogRequestMiddleware)
 
+	router.Use(middlewares.RequestIdMiddleware)
 	router.Use(middlewares.ErrorHandler)
 	router.Use(gin.CustomRecovery(middlewares.PanicHandler))
 
@@ -51,7 +63,7 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConf
 
 	// TODO: Implement error handling middleware
 
-	router.Any("/panic", func(ctx *gin.Context) {
+	router.GET("/panic", func(ctx *gin.Context) {
 		panic("Test Panic")
 	})
 

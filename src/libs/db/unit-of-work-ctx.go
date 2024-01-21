@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"donation-mgmt/src/libs/logger"
 )
 
 const UnitOfWorkCtxKey = "UnitOfWork"
@@ -9,8 +10,12 @@ const UnitOfWorkCtxKey = "UnitOfWork"
 type FinalizeFn = func()
 
 func GetUnitOfWorkFromCtxOrDefault(ctx context.Context) (*UnitOfWork, FinalizeFn) {
+	l := logger.ForComponent("UnitOfWorkCtx")
+
 	unitOfWork := GetUnitOfWorkFromCtx(ctx)
 	if unitOfWork == nil {
+		l.Warn("No Unit of Work found in context. Creating a new one.")
+
 		uow := NewUnitOfWork()
 
 		return uow, func() {

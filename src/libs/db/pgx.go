@@ -100,9 +100,19 @@ func (qt *queryTracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data
 		}
 	}
 
+	txStatus := "unknown"
+	switch conn.PgConn().TxStatus() {
+	case 'I':
+		txStatus = "idle"
+	case 'T':
+		txStatus = "in_transaction"
+	case 'E':
+		txStatus = "failed"
+	}
+
 	// TODO: Add Contextual data to the logger
 	qt.logger.With(contextual.ContextLogData(ctx)...).
-		Info("SQL Query started", slog.String("sql", strings.TrimSpace(sql.String())), slog.Any("args", data.Args))
+		Info("SQL Query started", slog.String("sql", strings.TrimSpace(sql.String())), slog.String("txStatus", txStatus), slog.Any("args", data.Args))
 	return ctx
 }
 

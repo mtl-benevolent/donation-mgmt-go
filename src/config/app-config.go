@@ -1,6 +1,8 @@
 package config
 
-import "github.com/Netflix/go-env"
+import (
+	"github.com/Netflix/go-env"
+)
 
 var appConfig *AppConfiguration
 
@@ -17,6 +19,9 @@ type AppConfiguration struct {
 
 	AppName        string         `env:"APP_NAME,default=donation-mgmt"`
 	AppEnvironment AppEnvironment `env:"APP_ENVIRONMENT,default=development"`
+
+	LogLevel     string `env:"LOG_LEVEL,default=info"`
+	LogAddSource bool   `env:"LOG_ADD_SOURCE,default=false"`
 
 	DBHost     string `env:"DB_HOST,default=localhost"`
 	DBPort     uint16 `env:"DB_PORT,default=26257"`

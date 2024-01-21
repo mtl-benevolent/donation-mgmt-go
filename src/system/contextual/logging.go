@@ -15,7 +15,7 @@ func ContextLogData(ctx context.Context) []any {
 	}
 
 	attrs := make([]any, 0)
-	attrs = append(attrs, slog.String("request_id", GetRequestId(ctx)))
+	attrs = append(attrs, slog.String("requestId", GetRequestId(ctx)))
 
 	return attrs
 }

@@ -3,8 +3,10 @@ package db
 import (
 	"context"
 	"donation-mgmt/src/data_access"
+	"donation-mgmt/src/libs/logger"
+	"donation-mgmt/src/system/contextual"
 	"errors"
-	"fmt"
+	"log/slog"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
@@ -12,8 +14,11 @@ import (
 )
 
 var ErrUnitOfWorkReleased = errors.New("unit of work was released")
+var ErrInitQuerier = errors.New("error initializing querier")
 
 type UnitOfWork struct {
+	l *slog.Logger
+
 	txRequested bool
 	released    bool
 
@@ -27,6 +32,8 @@ type UnitOfWork struct {
 
 func NewUnitOfWork() *UnitOfWork {
 	return &UnitOfWork{
+		l: logger.ForComponent("UnitOfWork"),
+
 		txRequested: false,
 		released:    false,
 
@@ -43,18 +50,22 @@ func (uow *UnitOfWork) WillUseTransaction() bool {
 }
 
 func (uow *UnitOfWork) GetQuerier(ctx context.Context) (data_access.Querier, error) {
+	l := uow.l.With(contextual.ContextLogData(ctx)...)
+
 	if uow.released {
 		return nil, ErrUnitOfWorkReleased
 	}
 
 	var err error
 	uow.initOnce.Do(func() {
+		l.Debug("Acquiring DB connection from the pool")
 		uow.conn, err = DBPool().Acquire(ctx)
 		if err != nil {
 			return
 		}
 
 		if uow.txRequested {
+			l.Debug("Initializing DB transaction...")
 			uow.tx, err = uow.conn.Begin(ctx)
 			if err != nil {
 				return
@@ -68,11 +79,12 @@ func (uow *UnitOfWork) GetQuerier(ctx context.Context) (data_access.Querier, err
 	})
 
 	if err != nil {
+		l.Error("Error initializing UnitOfWork", slog.Any("error", err))
 		return nil, err
 	}
 
 	if uow.querier == nil {
-		return nil, fmt.Errorf("error initializing querier")
+		return nil, ErrInitQuerier
 	}
 
 	return uow.querier, nil
@@ -80,18 +92,24 @@ func (uow *UnitOfWork) GetQuerier(ctx context.Context) (data_access.Querier, err
 
 // Finalize commits or rolls back the transaction (if necessary) and releases the database connection.
 func (uow *UnitOfWork) Finalize(ctx context.Context, isSuccess bool) error {
+	l := uow.l.With(contextual.ContextLogData(ctx)...)
+
 	if uow.released {
+		l.Debug("UnitOfWork already released. Nothing to do...")
 		return nil
 	}
 
 	// UnitOfWork is lazy-loaded. If not used, we don't have anything to do.
 	if uow.conn == nil {
+		l.Debug("UnitOfWork already released. Nothing to do...")
 		return nil
 	}
 
 	defer func() {
 		uow.conn.Release()
 		uow.released = true
+
+		l.Debug("Database connection released")
 	}()
 
 	if uow.tx != nil {
@@ -101,13 +119,17 @@ func (uow *UnitOfWork) Finalize(ctx context.Context, isSuccess bool) error {
 		}(uow.tx, ctx)
 
 		if isSuccess {
+			l.Debug("Commiting DB transaction")
 			err := uow.tx.Commit(ctx)
 			if err != nil {
+				l.Debug("Error commiting DB transaction", slog.Any("error", err))
 				return err
 			}
 		} else {
+			l.Debug("Rolling back DB transaction")
 			err := uow.tx.Rollback(ctx)
 			if err != nil {
+				l.Debug("Error rolling back DB transaction", slog.Any("error", err))
 				return err
 			}
 		}

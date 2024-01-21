@@ -2,6 +2,7 @@ package organizations
 
 import (
 	"donation-mgmt/src/data_access"
+	"donation-mgmt/src/libs/db"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -31,6 +32,9 @@ func GetOrganizationsV1(c *gin.Context) {
 }
 
 func CreateOrganizationV1(c *gin.Context) {
+	uow := db.GetUnitOfWorkFromCtx(c)
+	uow.UseTransaction()
+
 	reqDTO := CreateOrganizationRequest{}
 	if err := c.ShouldBindJSON(&reqDTO); err != nil {
 		c.Error(err)
