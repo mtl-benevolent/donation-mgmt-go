@@ -2,7 +2,9 @@ package middlewares
 
 import (
 	"donation-mgmt/src/apperrors"
+	"errors"
 	"fmt"
+	"io"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,7 +31,14 @@ func ErrorHandler(c *gin.Context) {
 
 	rfcErr := apperrors.RFC7807Error{}
 
-	if detailedErr, ok := reqErr.(apperrors.DetailedError); ok {
+	if errors.Is(reqErr, io.EOF) {
+		rfcErr = apperrors.RFC7807Error{
+			Status:   400,
+			Title:    "Bad Request",
+			Detail:   "Request body is required",
+			Instance: "",
+		}
+	} else if detailedErr, ok := reqErr.(apperrors.DetailedError); ok {
 		rfcErr = detailedErr.ToRFC7807Error()
 	} else {
 		rfcErr = apperrors.RFC7807Error{

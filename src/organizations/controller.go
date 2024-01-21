@@ -31,7 +31,29 @@ func GetOrganizationsV1(c *gin.Context) {
 }
 
 func CreateOrganizationV1(c *gin.Context) {
-	c.String(http.StatusNotFound, "Not implemented")
+	reqDTO := CreateOrganizationRequest{}
+	if err := c.ShouldBindJSON(&reqDTO); err != nil {
+		c.Error(err)
+		return
+	}
+
+	if err := reqDTO.Validate(); err != nil {
+		c.Error(err)
+		return
+	}
+
+	org, err := GetOrgService().CreateOrganization(c, data_access.InsertOrganizationParams{
+		Name: reqDTO.Name,
+		Slug: reqDTO.Slug,
+	})
+
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	dto := mapOrgToDTO(org)
+	c.JSON(http.StatusCreated, dto)
 }
 
 func GetOrganizationBySlugV1(c *gin.Context) {
