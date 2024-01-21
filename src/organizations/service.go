@@ -25,8 +25,13 @@ func NewOrgService() OrgService {
 }
 
 func (s *OrgServiceImpl) GetOrganizationBySlug(ctx context.Context, slug string) (data_access.Organization, error) {
-	// TODO: Implement Unit of Work pattern
-	repo := data_access.New(db.DBPool())
+	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
+	defer finalizer()
+
+	repo, err := uow.GetQuerier(ctx)
+	if err != nil {
+		return data_access.Organization{}, err
+	}
 
 	org, err := repo.GetOrganizationBySlug(ctx, slug)
 	if err != nil {
@@ -44,8 +49,13 @@ func (s *OrgServiceImpl) GetOrganizationBySlug(ctx context.Context, slug string)
 }
 
 func (s *OrgServiceImpl) GetOrganizations(ctx context.Context) ([]data_access.Organization, error) {
-	// TODO: Implement Unit of Work pattern
-	repo := data_access.New(db.DBPool())
+	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
+	defer finalizer()
+
+	repo, err := uow.GetQuerier(ctx)
+	if err != nil {
+		return []data_access.Organization{}, err
+	}
 
 	orgs, err := repo.GetOrganizations(ctx)
 	if err != nil {
@@ -60,8 +70,13 @@ func (s *OrgServiceImpl) GetOrganizations(ctx context.Context) ([]data_access.Or
 }
 
 func (s *OrgServiceImpl) CreateOrganization(ctx context.Context, params data_access.InsertOrganizationParams) (data_access.Organization, error) {
-	// TODO: Implement Unit of Work pattern
-	repo := data_access.New(db.DBPool())
+	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
+	defer finalizer()
+
+	repo, err := uow.GetQuerier(ctx)
+	if err != nil {
+		return data_access.Organization{}, err
+	}
 
 	inserted, err := repo.InsertOrganization(ctx, params)
 	if err != nil {

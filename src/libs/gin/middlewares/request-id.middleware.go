@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"donation-mgmt/src/system/context_data"
+	"donation-mgmt/src/system/contextual"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -15,7 +15,7 @@ func RequestIdMiddleware(c *gin.Context) {
 		requestId = uuid.NewString()
 	}
 
-	c.Set(context_data.RequestIdCtxKey, requestId)
+	c.Set(contextual.RequestIdCtxKey, requestId)
 	c.Header(requestIdHttpHeader, requestId)
 
 	c.Next()
