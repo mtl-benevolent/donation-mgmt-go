@@ -4,8 +4,19 @@ import "github.com/Netflix/go-env"
 
 var appConfig *AppConfiguration
 
+type AppEnvironment string
+
+const (
+	Development AppEnvironment = "development"
+	Staging     AppEnvironment = "staging"
+	Production  AppEnvironment = "production"
+)
+
 type AppConfiguration struct {
 	HTTPPort uint16 `env:"HTTP_PORT,default=8000"`
+
+	AppName        string         `env:"APP_NAME,default=donation-mgmt"`
+	AppEnvironment AppEnvironment `env:"APP_ENVIRONMENT,default=development"`
 
 	DBHost     string `env:"DB_HOST,default=localhost"`
 	DBPort     uint16 `env:"DB_PORT,default=26257"`
