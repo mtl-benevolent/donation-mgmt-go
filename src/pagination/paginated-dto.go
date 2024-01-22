@@ -8,6 +8,7 @@ import (
 )
 
 const DefaultLimit = 25
+const MaxLimit = 100
 const DefaultOffset = 0
 
 type PaginationOptions struct {
@@ -39,6 +40,8 @@ func ParsePaginationOptions(c *gin.Context) PaginationOptions {
 	if err != nil {
 		limit = DefaultLimit
 	}
+
+	limit = min(limit, MaxLimit)
 
 	return PaginationOptions{
 		Offset: int(offset),

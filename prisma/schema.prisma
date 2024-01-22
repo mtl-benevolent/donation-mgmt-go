@@ -20,8 +20,55 @@ model Organization {
   archived_at DateTime? @db.Timestamptz()
 
   donations Donation[]
+
+  user_roles ScopedUserRole[]
   
   @@map("organizations")
+}
+
+model Role {
+  id BigInt @id @default(sequence())
+  name String @unique
+
+  capabilities String[]
+
+  created_at DateTime @db.Timestamptz() @default(now())
+  archived_at DateTime? @db.Timestamptz()
+
+  scoped_user_roles ScopedUserRole[]
+  global_user_roles GlobalUserRole[]
+
+  @@map("roles")
+}
+
+model ScopedUserRole {
+  id BigInt @id @default(sequence())
+
+  subject String
+
+  role Role @relation(fields: [role_id], references: [id])
+  role_id BigInt
+
+  organization Organization @relation(fields: [organization_id], references: [id])
+  organization_id BigInt
+
+  created_at DateTime @db.Timestamptz() @default(now())
+
+  @@map("scoped_user_roles")
+  @@unique([subject, organization_id])
+}
+
+model GlobalUserRole {
+  id BigInt @id @default(sequence())
+
+  subject String @unique
+
+  role Role @relation(fields: [role_id], references: [id])
+  role_id BigInt
+
+  created_at DateTime @db.Timestamptz() @default(now())
+
+  @@map("global_user_roles")
 }
 
 enum Enviroment {

@@ -12,6 +12,24 @@ services:
       - start-single-node
       - --insecure
 
+  db-migrate-and-seed:
+    depends_on:
+      - roach1
+    build:
+      context: .
+      dockerfile: Dockerfile_migrate
+    volumes:
+      - ".:/build"
+    environment:
+      - APP_NAME=migrate-and-seed
+      - PG_MIGRATION_DB=postgresql://donation_mgmt_migrator@roach1:26257/donationsdb?schema=donations
+      - DB_HOST=roach1
+      - DB_PORT=26257
+      - DB_USER=donation_mgmt_app
+      - DB_PASSWORD=
+      - DB_NAME=donationsdb
+      - DB_SCHEMA=donations
+
   donation-mgmt:
     depends_on:
       - roach1
@@ -25,7 +43,6 @@ services:
       - "8000:8000"
       - "18000:18000"
     environment:
-      - PG_MIGRATION_DB=postgresql://donation_mgmt_migrator@roach1:26257/donationsdb?schema=donations
       - DB_HOST=roach1
       - DB_PORT=26257
       - DB_USER=donation_mgmt_app

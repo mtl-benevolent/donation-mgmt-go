@@ -74,6 +74,37 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConf
 	})
 }
 
+func BootstrapSingleConnection(appConfig *config.AppConfiguration) (*pgx.Conn, error) {
+	l := logger.ForComponent(componentName)
+
+	connectionString := fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s?application_name=%s&search_path=%s",
+		appConfig.DBUser,
+		appConfig.DBPassword,
+		appConfig.DBHost,
+		appConfig.DBPort,
+		appConfig.DBName,
+		appConfig.AppName,
+		appConfig.DBSchema,
+	)
+
+	dbConfig, err := pgx.ParseConfig(connectionString)
+	if err != nil {
+		l.Error("Unable to parse database connection string", slog.Any("error", err))
+		return nil, err
+	}
+
+	dbConfig.Tracer = &queryTracer{logger: l}
+
+	dbConn, err := pgx.ConnectConfig(context.Background(), dbConfig)
+	if err != nil {
+		l.Error("Unable to connect to the database", slog.Any("error", err))
+		return nil, err
+	}
+
+	return dbConn, nil
+}
+
 func DBPool() *pgxpool.Pool {
 	if pool == nil {
 		panic("Database not initialized")
@@ -92,7 +123,7 @@ func (qt *queryTracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data
 
 	for i, line := range lines {
 		if !strings.HasPrefix(line, "--") {
-			sql.WriteString(line)
+			sql.WriteString(strings.ReplaceAll(line, "\t", " "))
 
 			if i > 0 {
 				sql.WriteString(" ")

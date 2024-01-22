@@ -7,7 +7,7 @@ import (
 	"donation-mgmt/src/libs/gin"
 	"donation-mgmt/src/libs/logger"
 	"donation-mgmt/src/organizations"
-	"fmt"
+	"donation-mgmt/src/permissions"
 	"log/slog"
 	"os"
 
@@ -25,7 +25,6 @@ func main() {
 		err := recover()
 		if err != nil {
 			logger.Error("Application panicked", slog.Any("error", err))
-			fmt.Printf("Application panicked: %v\n", err)
 
 			os.Exit(1)
 		}
@@ -35,6 +34,7 @@ func main() {
 
 	router := gin.Bootstrap(gs, readyCheck, appConfig)
 
+	permissions.Bootstrap()
 	organizations.Bootstrap(router)
 
 	readyCheck.StartPolling()

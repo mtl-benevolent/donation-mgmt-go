@@ -31,6 +31,10 @@ func BootstrapLogger(appConfig *config.AppConfiguration) *slog.Logger {
 	return logger
 }
 
+func ForceSetLogger(newLogger *slog.Logger) {
+	logger = newLogger
+}
+
 func Logger() *slog.Logger {
 	if logger == nil {
 		panic("Logger was not bootstrapped")

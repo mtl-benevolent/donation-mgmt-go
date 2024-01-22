@@ -10,21 +10,14 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-type OrgService interface {
-	GetOrganizationBySlug(ctx context.Context, slug string) (data_access.Organization, error)
-	GetOrganizations(ctx context.Context, page pagination.PaginationOptions) (pagination.PaginatedResult[data_access.Organization], error)
-	CreateOrganization(ctx context.Context, params data_access.InsertOrganizationParams) (data_access.Organization, error)
-	UpdateOrganization(ctx context.Context, params data_access.UpdateOrganizationBySlugParams) (data_access.Organization, error)
+type OrganizationService struct {
 }
 
-type OrgServiceImpl struct {
+func NewOrganizationService() *OrganizationService {
+	return &OrganizationService{}
 }
 
-func NewOrgService() OrgService {
-	return &OrgServiceImpl{}
-}
-
-func (s *OrgServiceImpl) GetOrganizationBySlug(ctx context.Context, slug string) (data_access.Organization, error) {
+func (s *OrganizationService) GetOrganizationBySlug(ctx context.Context, slug string) (data_access.Organization, error) {
 	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
 	defer finalizer()
 
@@ -48,7 +41,13 @@ func (s *OrgServiceImpl) GetOrganizationBySlug(ctx context.Context, slug string)
 	return org, nil
 }
 
-func (s *OrgServiceImpl) GetOrganizations(ctx context.Context, page pagination.PaginationOptions) (pagination.PaginatedResult[data_access.Organization], error) {
+type ListOrganizationsParams struct {
+	// Subject is the user that is requesting the list of organizations. Leave empty to get all organizations.
+	Subject     string
+	PageOptions pagination.PaginationOptions
+}
+
+func (s *OrganizationService) GetOrganizations(ctx context.Context, params ListOrganizationsParams) (pagination.PaginatedResult[data_access.Organization], error) {
 	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
 	defer finalizer()
 
@@ -57,10 +56,21 @@ func (s *OrgServiceImpl) GetOrganizations(ctx context.Context, page pagination.P
 		return pagination.PaginatedResult[data_access.Organization]{}, err
 	}
 
-	orgs, err := repo.GetOrganizations(ctx, data_access.GetOrganizationsParams{
-		Offset: int32(page.Offset),
-		Limit:  int32(page.Limit),
-	})
+	var orgs []data_access.Organization
+
+	if params.Subject == "" {
+		orgs, err = repo.ListOrganizations(ctx, data_access.ListOrganizationsParams{
+			Offset: int32(params.PageOptions.Offset),
+			Limit:  int32(params.PageOptions.Limit),
+		})
+	} else {
+		orgs, err = repo.ListAuthorizedOrganizations(ctx, data_access.ListAuthorizedOrganizationsParams{
+			Subject: params.Subject,
+			Offset:  int32(params.PageOptions.Offset),
+			Limit:   int32(params.PageOptions.Limit),
+		})
+	}
+
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return pagination.PaginatedResult[data_access.Organization]{}, nil
@@ -69,7 +79,14 @@ func (s *OrgServiceImpl) GetOrganizations(ctx context.Context, page pagination.P
 		return pagination.PaginatedResult[data_access.Organization]{}, err
 	}
 
-	total, err := repo.GetOrganizationsCount(ctx)
+	var total int64
+
+	if params.Subject == "" {
+		total, err = repo.CountOrganizations(ctx)
+	} else {
+		total, err = repo.CountAuthorizedOrganizations(ctx, params.Subject)
+	}
+
 	if err != nil {
 		return pagination.PaginatedResult[data_access.Organization]{}, err
 	}
@@ -82,7 +99,7 @@ func (s *OrgServiceImpl) GetOrganizations(ctx context.Context, page pagination.P
 	return paginatedResult, nil
 }
 
-func (s *OrgServiceImpl) CreateOrganization(ctx context.Context, params data_access.InsertOrganizationParams) (data_access.Organization, error) {
+func (s *OrganizationService) CreateOrganization(ctx context.Context, params data_access.InsertOrganizationParams) (data_access.Organization, error) {
 	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
 	defer finalizer()
 
@@ -102,7 +119,7 @@ func (s *OrgServiceImpl) CreateOrganization(ctx context.Context, params data_acc
 	return inserted, nil
 }
 
-func (s *OrgServiceImpl) UpdateOrganization(ctx context.Context, params data_access.UpdateOrganizationBySlugParams) (data_access.Organization, error) {
+func (s *OrganizationService) UpdateOrganization(ctx context.Context, params data_access.UpdateOrganizationBySlugParams) (data_access.Organization, error) {
 	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
 	defer finalizer()
 

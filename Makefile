@@ -1,15 +1,15 @@
-CMD_PATH = "src/cmd"
+API_ENTRY = "src/cmd/api/api.go"
 DIST_PATH = "dist"
 
 .PHONY: build
 build: generate
 	@echo "Building the API"
-	@go build -o $(DIST_PATH)/api $(CMD_PATH)/api.go
+	@go build -o $(DIST_PATH)/api $(API_ENTRY)
 
 .PHONY: build_debug
 build_debug:
 	@echo "Building the API in debug mode"
-	@go build -gcflags="all=-N -l" -o $(DIST_PATH)/api $(CMD_PATH)/api.go
+	@go build -gcflags="all=-N -l" -o $(DIST_PATH)/api $(API_ENTRY)
 
 generate:
 	@echo "[INFO] Generating code..."
@@ -41,3 +41,8 @@ lint:
 	
 	@echo "Linting code"
 	@$$(go env GOPATH)/bin/golangci-lint run ./...
+
+.PHONY: seed
+seed:
+	@echo "Seeding the database"
+	@go run ./src/cmd/seed/seed.go

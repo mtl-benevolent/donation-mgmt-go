@@ -29,6 +29,8 @@ type AppConfiguration struct {
 	DBPassword string `env:"DB_PASSWORD"`
 	DBName     string `env:"DB_NAME,default=donationsdb"`
 	DBSchema   string `env:"DB_SCHEMA,default=donations"`
+
+	RewriteForbiddenErrors bool `env:"REWRITE_FORBIDDEN_ERRORS,default=true"`
 }
 
 func Bootstrap() *AppConfiguration {
