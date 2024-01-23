@@ -6,14 +6,12 @@ import (
 	"donation-mgmt/src/libs/db"
 	"donation-mgmt/src/pagination"
 	p "donation-mgmt/src/permissions"
+	"donation-mgmt/src/system/contextual"
 	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
-
-// TODO: Remove me and implement a proper middleware
-const mockSubject = "ginette"
 
 func registerRoutes(router *gin.Engine) {
 	orgRouter := router.Group("/v1/organizations")
@@ -25,10 +23,18 @@ func registerRoutes(router *gin.Engine) {
 }
 
 func ListOrganizationsV1(c *gin.Context) {
+	subject := contextual.GetSubject(c)
+	if subject == "" {
+		c.Error(&apperrors.AuthorizationError{
+			Message: "User is not authenticated",
+		})
+		return
+	}
+
 	page := pagination.ParsePaginationOptions(c)
 
 	hasGlobalOrgRead, err := p.GetPermissionsService().HasCapabilities(c, p.HasRequiredPermissionsParams{
-		Subject:      mockSubject,
+		Subject:      subject,
 		Capabilities: []string{p.EntityOrganization.Capability(p.ActionRead)},
 		MustBeGlobal: true,
 	})
@@ -37,7 +43,7 @@ func ListOrganizationsV1(c *gin.Context) {
 		return
 	}
 
-	scopeQueryBySubject := mockSubject
+	scopeQueryBySubject := subject
 	if hasGlobalOrgRead {
 		scopeQueryBySubject = ""
 	}
@@ -148,18 +154,27 @@ func mapOrgToDTO(org data_access.Organization) OrganizationDTO {
 
 func authorize(capability string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		subject := contextual.GetSubject(c)
+		if subject == "" {
+			c.Error(&apperrors.AuthorizationError{
+				Message: "User is not authenticated",
+			})
+			c.Abort()
+			return
+		}
+
 		slug, found := c.Params.Get("slug")
 
 		var params p.HasRequiredPermissionsParams
 		if !found {
 			params = p.HasRequiredPermissionsParams{
-				Subject:      mockSubject,
+				Subject:      subject,
 				Capabilities: []string{capability},
 				MustBeGlobal: true,
 			}
 		} else {
 			params = p.HasRequiredPermissionsParams{
-				Subject:          mockSubject,
+				Subject:          subject,
 				Capabilities:     []string{capability},
 				OrganizationSlug: slug,
 			}

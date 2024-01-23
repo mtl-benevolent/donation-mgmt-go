@@ -4,6 +4,7 @@ import (
 	"context"
 	"donation-mgmt/src/config"
 	"donation-mgmt/src/libs/db"
+	firebaseadmin "donation-mgmt/src/libs/firebase-admin"
 	"donation-mgmt/src/libs/gin"
 	"donation-mgmt/src/libs/logger"
 	"donation-mgmt/src/organizations"
@@ -18,6 +19,8 @@ func main() {
 	appConfig := config.Bootstrap()
 	logger := logger.BootstrapLogger(appConfig)
 
+	appConfig.WarnUnsafeOptions(logger)
+
 	gs := lifecycle.NewGracefulShutdown(context.Background())
 	readyCheck := lifecycle.NewReadyCheck()
 
@@ -29,6 +32,11 @@ func main() {
 			os.Exit(1)
 		}
 	}()
+
+	if appConfig.EnableFirebase() {
+		logger.Info("Firebase services are required. Bootstrapping client...")
+		firebaseadmin.Bootstrap(appConfig)
+	}
 
 	db.Bootstrap(gs, readyCheck, appConfig)
 

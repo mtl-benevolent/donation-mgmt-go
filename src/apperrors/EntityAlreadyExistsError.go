@@ -1,6 +1,9 @@
 package apperrors
 
-import "fmt"
+import (
+	"fmt"
+	"net/http"
+)
 
 type EntityAlreadyExistsError struct {
 	EntityName string
@@ -19,7 +22,7 @@ func (e *EntityAlreadyExistsError) ToRFC7807Error() RFC7807Error {
 	return RFC7807Error{
 		Type:     "AlreadyExists",
 		Title:    "Entity already exists",
-		Status:   409,
+		Status:   http.StatusConflict,
 		Detail:   fmt.Sprintf("%s entity already exists", e.EntityName),
 		Instance: "",
 	}

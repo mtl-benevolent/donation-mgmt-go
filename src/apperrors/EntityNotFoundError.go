@@ -1,6 +1,9 @@
 package apperrors
 
-import "fmt"
+import (
+	"fmt"
+	"net/http"
+)
 
 type EntityNotFoundError struct {
 	EntityName string
@@ -19,7 +22,7 @@ func (e *EntityNotFoundError) ToRFC7807Error() RFC7807Error {
 	return RFC7807Error{
 		Type:     "NotFound",
 		Title:    "Entity not found",
-		Status:   404,
+		Status:   http.StatusNotFound,
 		Detail:   fmt.Sprintf("%s entity was not found", e.EntityName),
 		Instance: "",
 	}

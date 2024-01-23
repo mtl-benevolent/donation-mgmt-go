@@ -3,6 +3,7 @@ package apperrors
 import (
 	"donation-mgmt/src/config"
 	"fmt"
+	"net/http"
 )
 
 type OperationForbiddenError struct {
@@ -33,7 +34,7 @@ func (e *OperationForbiddenError) ToRFC7807Error() RFC7807Error {
 	return RFC7807Error{
 		Type:     "Forbidden",
 		Title:    "Operation forbidden",
-		Status:   403,
+		Status:   http.StatusForbidden,
 		Detail:   e.Error(),
 		Instance: "",
 	}

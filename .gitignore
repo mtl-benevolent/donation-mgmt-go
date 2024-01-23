@@ -128,3 +128,6 @@ tmp/
 .env
 *.gen.go
 *.gen.sql
+
+credentials/*
+!credentials/.gitkeep

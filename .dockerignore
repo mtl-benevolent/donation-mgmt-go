@@ -6,3 +6,4 @@ LICENSE
 docker-compose.yml
 tmp/
 bin/
+credentials/

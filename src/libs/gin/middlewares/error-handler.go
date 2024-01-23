@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"donation-mgmt/src/apperrors"
+	"donation-mgmt/src/libs/logger"
 	"errors"
 	"fmt"
 	"io"
@@ -21,6 +22,8 @@ func PanicHandler(c *gin.Context, panicReason any) {
 }
 
 func ErrorHandler(c *gin.Context) {
+	l := logger.ForComponent("ErrorHandler")
+
 	c.Next()
 
 	if len(c.Errors) == 0 {
@@ -49,5 +52,6 @@ func ErrorHandler(c *gin.Context) {
 		}
 	}
 
+	l.Error(fmt.Sprintf("error of type '%s' occurred: %s", rfcErr.Title, rfcErr.Detail))
 	c.JSON(rfcErr.Status, rfcErr)
 }

@@ -2,6 +2,7 @@ package apperrors
 
 import (
 	"fmt"
+	"net/http"
 
 	validation "github.com/go-ozzo/ozzo-validation"
 )
@@ -36,7 +37,7 @@ func (e *ValidationError) ToRFC7807Error() RFC7807Error {
 	return RFC7807Error{
 		Type:     "ValidationError",
 		Title:    "Validation Error",
-		Status:   400,
+		Status:   http.StatusBadRequest,
 		Detail:   fmt.Sprintf("Error validating %s entity", e.EntityName),
 		Details:  fieldErrors,
 		Instance: "",

@@ -59,9 +59,15 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConf
 	router.Use(middlewares.ErrorHandler)
 	router.Use(gin.CustomRecovery(middlewares.PanicHandler))
 
-	router.Use(middlewares.UnitOfWork)
+	if appConfig.HTTPAuthenticationMethod == config.AuthFirebase {
+		router.Use(middlewares.FirebaseAuthMiddleware())
+	} else if appConfig.HTTPAuthenticationMethod == config.AuthDevHeader {
+		router.Use(middlewares.DevHeadersAuthMiddleware)
+	} else {
+		panic("Unknown HTTP authentication method: " + appConfig.HTTPAuthenticationMethod)
+	}
 
-	// TODO: Implement error handling middleware
+	router.Use(middlewares.UnitOfWork)
 
 	router.GET("/panic", func(ctx *gin.Context) {
 		panic("Test Panic")

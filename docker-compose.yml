@@ -49,6 +49,9 @@ services:
       - DB_PASSWORD=
       - DB_NAME=donationsdb
       - DB_SCHEMA=donations
+      - GCP_PROJECT_ID=donation-mgmt-stg
+      - HTTP_AUTH=devheader
+      - GCP_SA_JSON_PATH=/build/credentials/gcp-sa.json
     entrypoint: "/build/scripts/watch.sh"
 
 volumes:
