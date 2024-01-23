@@ -38,5 +38,5 @@ func MapDBError(err error, identifier EntityIdentifier) error {
 		}
 	}
 
-	return fmt.Errorf("error executing database query: %w", err)
+	return fmt.Errorf("error executing %s DB Query: %w", identifier.EntityName, err)
 }

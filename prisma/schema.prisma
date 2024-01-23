@@ -117,11 +117,12 @@ model Donation {
   archived_at DateTime? @db.Timestamptz()
 
   payments DonationPayment[]
-  events DonationEvent[]
   comments DonationComment[]
 
   @@map("donations")
   @@index([organization_id, environment, fiscal_year])
+  @@index([organization_id, environment, fiscal_year, external_id, source])
+  @@unique([organization_id, environment, slug])
 }
 
 model DonationPayment {
@@ -139,19 +140,6 @@ model DonationPayment {
   archived_at DateTime? @db.Timestamptz()
 
   @@map("donation_payments")
-}
-
-model DonationEvent {
-  id BigInt @id @default(sequence())
-  event_name String
-  details Json?
-
-  created_at DateTime @db.Timestamptz() @default(now())
-
-  donation Donation @relation(fields: [donation_id], references: [id])
-  donation_id BigInt
-
-  @@map("donation_events")
 }
 
 model DonationComment {
