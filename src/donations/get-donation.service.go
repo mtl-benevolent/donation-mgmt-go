@@ -55,10 +55,62 @@ func (s *DonationsService) GetDonationByID(ctx context.Context, params GetDonati
 		})
 	}
 
-	return mapDonationRowsToModel(donationRows)
+	return mapDonationRows(donationRows)
 }
 
-func mapDonationRowsToModel(donationRows []data_access.GetDonationByIDRow) (DonationModel, error) {
+type GetDonationBySlugParams struct {
+	OrganizationID int64
+	Environment    data_access.Enviroment
+	Slug           string
+}
+
+func (s *DonationsService) GetDonationBySlug(ctx context.Context, params GetDonationBySlugParams) (DonationModel, error) {
+	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
+	defer finalizer()
+
+	querier, err := uow.GetQuerier(ctx)
+	if err != nil {
+		return DonationModel{}, err
+	}
+
+	donationRows, err := querier.GetDonationBySlug(ctx, data_access.GetDonationBySlugParams{
+		Slug:           params.Slug,
+		OrganizationID: params.OrganizationID,
+		Environment:    params.Environment,
+	})
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return DonationModel{}, &apperrors.EntityNotFoundError{
+				EntityName: "Donation",
+				Extra: map[string]interface{}{
+					"slug":           params.Slug,
+					"organizationId": params.OrganizationID,
+					"environment":    params.Environment,
+				},
+			}
+		}
+
+		return DonationModel{}, db.MapDBError(err, db.EntityIdentifier{
+			EntityName: "Donation",
+			Extra: map[string]interface{}{
+				"slug":           params.Slug,
+				"organizationId": params.OrganizationID,
+				"environment":    params.Environment,
+			},
+		})
+	}
+
+	// Same struct, but we have to convert it to the correct struct array
+	rows := make([]data_access.GetDonationByIDRow, len(donationRows))
+	for i, row := range donationRows {
+		rows[i] = (data_access.GetDonationByIDRow)(row)
+	}
+
+	return mapDonationRows(rows)
+}
+
+func mapDonationRows(donationRows []data_access.GetDonationByIDRow) (DonationModel, error) {
 	model := DonationModel{
 		Payments: make([]data_access.DonationPayment, len(donationRows)),
 	}

@@ -6,6 +6,7 @@ import (
 	"donation-mgmt/src/data_access"
 	"donation-mgmt/src/libs/db"
 	"donation-mgmt/src/pagination"
+	"errors"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -28,7 +29,7 @@ func (s *OrganizationService) GetOrganizationBySlug(ctx context.Context, slug st
 
 	org, err := repo.GetOrganizationBySlug(ctx, slug)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return data_access.Organization{}, &apperrors.EntityNotFoundError{
 				EntityName: "Organization",
 				EntityID:   slug,
@@ -39,6 +40,55 @@ func (s *OrganizationService) GetOrganizationBySlug(ctx context.Context, slug st
 	}
 
 	return org, nil
+}
+
+func (s *OrganizationService) GetOrganizationIDForSlug(ctx context.Context, slug string) (int64, error) {
+	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
+	defer finalizer()
+
+	repo, err := uow.GetQuerier(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	orgID, err := repo.GetOrganizationIDBySlug(ctx, slug)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, &apperrors.EntityNotFoundError{
+				EntityName: "Organization",
+				EntityID:   slug,
+			}
+		}
+
+		return 0, err
+	}
+
+	return orgID, nil
+}
+
+func (s *OrganizationService) ListFiscalYearsForOrganization(ctx context.Context, orgID int64, environment data_access.Enviroment) ([]int16, error) {
+	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
+	defer finalizer()
+
+	repo, err := uow.GetQuerier(ctx)
+	if err != nil {
+		return []int16{}, err
+	}
+
+	fiscalYears, err := repo.ListOrganizationFiscalYears(ctx, data_access.ListOrganizationFiscalYearsParams{
+		OrganizationID: orgID,
+		Environment:    environment,
+	})
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []int16{}, nil
+		}
+
+		return []int16{}, err
+	}
+
+	return fiscalYears, nil
 }
 
 type ListOrganizationsParams struct {
@@ -72,7 +122,7 @@ func (s *OrganizationService) GetOrganizations(ctx context.Context, params ListO
 	}
 
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return pagination.PaginatedResult[data_access.Organization]{}, nil
 		}
 
