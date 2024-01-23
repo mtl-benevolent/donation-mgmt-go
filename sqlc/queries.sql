@@ -101,20 +101,21 @@ WHERE slug = LOWER(sqlc.arg('Slug'))
 RETURNING *;
 
 -- name: GetDonationByID :many
-with comments_count as (
-	select count(*) as "comments_count", dc.donation_id from donation_comments dc 
-	where dc.archived_at is null
-		and dc.donation_id = sqlc.Arg('ID')
-	group by donation_id
+WITH comments_count AS (
+	SELECT count(*) AS "comments_count", dc.donation_id FROM donation_comments dc 
+	WHERE dc.archived_at IS NULL
+		AND dc.donation_id = sqlc.Arg('ID')
+	GROUP BY donation_id
 )
-select d.*, coalesce(cc.comments_count, 0) as "comments_count", dp.* from donations d
-inner join donation_payments dp
-	on dp.donation_id = d.id 
-left outer join comments_count cc
-	on cc.donation_id = d.id
-where d.id = sqlc.Arg('ID')
-	and d.archived_at is null
-	and d.organization_id = sqlc.Arg('OrganizationID');
+SELECT d.*, coalesce(cc.comments_count, 0) AS "comments_count", dp.* FROM donations d
+INNER JOIN donation_payments dp
+	ON dp.donation_id = d.id 
+LEFT OUTER JOIN comments_count cc
+	ON cc.donation_id = d.id
+WHERE d.id = sqlc.Arg('ID')
+	AND d.archived_at IS NULL
+	AND d.organization_id = sqlc.Arg('OrganizationID')
+	AND d.environment = sqlc.Arg('Environment');
 
 -- name: InsertDonation :one
 INSERT INTO donations(
@@ -144,5 +145,16 @@ WHERE d.type = 'RECURRENT'
 	AND d.fiscal_year = sqlc.Arg('FiscalYear')
 	AND d.organization_id = sqlc.Arg('OrganizationID')
 	AND d.external_id = sqlc.Arg('ExternalID')
+	AND d.environment = sqlc.Arg('Environment')
 LIMIT 1
 RETURNING id, donation_id;
+
+-- name: UpdateDonationBySlug :exec
+UPDATE donations d 
+SET donor_email = sqlc.arg('DonorEmail'), 
+	donor_address = sqlc.arg('DonorAddress'),
+	fiscal_year = sqlc.arg('FiscalYear')
+where d.slug = sqlc.arg('Slug')
+and d.environment = sqlc.arg('Environment')
+and d.organization_id = sqlc.arg('OrganizationID')
+and d.archived_at is null;

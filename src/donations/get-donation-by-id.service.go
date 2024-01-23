@@ -12,7 +12,13 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func (s *DonationsService) GetDonationByID(ctx context.Context, donationID int64, organizationID int64) (DonationModel, error) {
+type GetDonationByIDParams struct {
+	OrganizationID int64
+	Environment    data_access.Enviroment
+	DonationID     int64
+}
+
+func (s *DonationsService) GetDonationByID(ctx context.Context, params GetDonationByIDParams) (DonationModel, error) {
 	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
 	defer finalizer()
 
@@ -22,26 +28,29 @@ func (s *DonationsService) GetDonationByID(ctx context.Context, donationID int64
 	}
 
 	donationRows, err := querier.GetDonationByID(ctx, data_access.GetDonationByIDParams{
-		ID:             donationID,
-		OrganizationID: organizationID,
+		ID:             params.DonationID,
+		OrganizationID: params.OrganizationID,
+		Environment:    params.Environment,
 	})
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return DonationModel{}, &apperrors.EntityNotFoundError{
 				EntityName: "Donation",
-				EntityID:   fmt.Sprintf("%d", donationID),
+				EntityID:   fmt.Sprintf("%d", params.DonationID),
 				Extra: map[string]interface{}{
-					"organizationId": organizationID,
+					"organizationId": params.OrganizationID,
+					"environment":    params.Environment,
 				},
 			}
 		}
 
 		return DonationModel{}, db.MapDBError(err, db.EntityIdentifier{
 			EntityName: "Donation",
-			EntityID:   fmt.Sprintf("%d", donationID),
+			EntityID:   fmt.Sprintf("%d", params.DonationID),
 			Extra: map[string]interface{}{
-				"organizationId": organizationID,
+				"organizationId": params.OrganizationID,
+				"environment":    params.Environment,
 			},
 		})
 	}

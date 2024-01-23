@@ -68,6 +68,7 @@ func (s *DonationsService) CreateDonationOrAddPayment(ctx context.Context, param
 			ReceiptAmount:  params.ReceiptAmount,
 			FiscalYear:     fiscalYear,
 			OrganizationID: params.OrganizationID,
+			Environment:    params.Environment,
 		})
 
 		if err != nil {
@@ -112,7 +113,11 @@ func (s *DonationsService) tryInsertPayment(
 		})
 	}
 
-	return s.GetDonationByID(ctx, inserted.DonationID, payment.OrganizationID)
+	return s.GetDonationByID(ctx, GetDonationByIDParams{
+		OrganizationID: payment.OrganizationID,
+		Environment:    payment.Environment,
+		DonationID:     inserted.DonationID,
+	})
 }
 
 func mapParamsToInsertDonation(params CreateDonationParams) (data_access.InsertDonationParams, error) {
