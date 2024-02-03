@@ -4,6 +4,7 @@ type Entity string
 
 const (
 	EntityOrganization Entity = "organization"
+	EntitySandbox      Entity = "sandbox"
 	EntityDonation     Entity = "donation"
 	EntityRoles        Entity = "roles"
 )

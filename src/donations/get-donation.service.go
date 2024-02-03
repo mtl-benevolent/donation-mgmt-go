@@ -145,14 +145,14 @@ func mapDonationRows(donationRows []data_access.GetDonationByIDRow) (DonationMod
 		}
 
 		model.Payments[i] = data_access.DonationPayment{
-			ID:            row.ID_2,
-			ExternalID:    row.ExternalID_2,
-			DonationID:    row.DonationID,
-			Amount:        row.Amount,
-			ReceiptAmount: row.ReceiptAmount,
-			ReceivedAt:    row.ReceivedAt,
-			CreatedAt:     row.CreatedAt_2,
-			ArchivedAt:    row.ArchivedAt_2,
+			ID:                   row.ID_2,
+			ExternalID:           row.ExternalID_2,
+			DonationID:           row.DonationID,
+			AmountInCents:        row.AmountInCents,
+			ReceiptAmountInCents: row.ReceiptAmountInCents,
+			ReceivedAt:           row.ReceivedAt,
+			CreatedAt:            row.CreatedAt_2,
+			ArchivedAt:           row.ArchivedAt_2,
 		}
 	}
 

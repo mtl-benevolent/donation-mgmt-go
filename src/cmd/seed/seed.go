@@ -34,6 +34,7 @@ var managerCapabilities = append(
 var adminCapabilities = append(
 	managerCapabilities,
 	permissions.EntityOrganization.Capability(permissions.ActionCreate),
+	permissions.EntitySandbox.Capability(permissions.ActionRead),
 )
 
 func main() {

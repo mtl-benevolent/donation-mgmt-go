@@ -33,10 +33,10 @@ type CreateDonationParams struct {
 	EmitReceipt bool
 	SendByEmail bool
 
-	PaymentAmount     int64
-	ReceiptAmount     int64
-	ReceivedAt        time.Time
-	PaymentExternalID *string
+	PaymentAmountInCents int64
+	ReceiptAmountInCents int64
+	ReceivedAt           time.Time
+	PaymentExternalID    *string
 }
 
 func (p CreateDonationParams) CanInsertPayment() bool {
@@ -63,12 +63,12 @@ func (s *DonationsService) CreateDonationOrAddPayment(ctx context.Context, param
 		}
 
 		donation, err := s.tryInsertPayment(ctx, querier, data_access.InsertPaymentToRecurrentDonationParams{
-			ExternalID:     params.ExternalID,
-			Amount:         params.PaymentAmount,
-			ReceiptAmount:  params.ReceiptAmount,
-			FiscalYear:     fiscalYear,
-			OrganizationID: params.OrganizationID,
-			Environment:    params.Environment,
+			ExternalID:           params.ExternalID,
+			AmountInCents:        params.PaymentAmountInCents,
+			ReceiptAmountInCents: params.ReceiptAmountInCents,
+			FiscalYear:           fiscalYear,
+			OrganizationID:       params.OrganizationID,
+			Environment:          params.Environment,
 		})
 
 		if err != nil {
@@ -171,8 +171,8 @@ func mapParamsToInsertPayment(params CreateDonationParams) data_access.InsertDon
 	return data_access.InsertDonationPaymentParams{
 		DonationID:    -1,
 		ExternalID:    params.PaymentExternalID,
-		Amount:        params.PaymentAmount,
-		ReceiptAmount: params.ReceiptAmount,
+		Amount:        params.PaymentAmountInCents,
+		ReceiptAmount: params.ReceiptAmountInCents,
 		ReceivedAt:    params.ReceivedAt,
 	}
 }

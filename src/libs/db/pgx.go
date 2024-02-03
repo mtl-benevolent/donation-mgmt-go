@@ -42,13 +42,11 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConf
 
 	dbConfig.ConnConfig.Tracer = &queryTracer{logger: l}
 
-	dbpool, err := pgxpool.NewWithConfig(gs.AppContext(), dbConfig)
+	pool, err = pgxpool.NewWithConfig(gs.AppContext(), dbConfig)
 	if err != nil {
 		l.Error("Unable to connect to the database", slog.Any("error", err))
 		panic(fmt.Sprintf("Unable to connect to the database: %v", err))
 	}
-
-	pool = dbpool
 
 	l.Info("Database is bootstrapped")
 
@@ -58,7 +56,7 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConf
 		pingCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
-		err := dbpool.Ping(pingCtx)
+		err := pool.Ping(pingCtx)
 
 		if err != nil {
 			l.Error("Unable to ping the database", slog.Any("error", err))
@@ -69,7 +67,7 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConf
 
 	gs.RegisterComponentWithFn(componentName, func() error {
 		l.Info("Closing the database connection pool")
-		dbpool.Close()
+		pool.Close()
 		return nil
 	})
 }
@@ -103,6 +101,37 @@ func BootstrapSingleConnection(appConfig *config.AppConfiguration) (*pgx.Conn, e
 	}
 
 	return dbConn, nil
+}
+
+func BootstrapTestPool(appConfig *config.AppConfiguration) {
+	l := logger.ForComponent("TestPostgreSQL")
+
+	connectionString := fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s?application_name=%s&search_path=%s",
+		appConfig.DBUser,
+		appConfig.DBPassword,
+		appConfig.DBHost,
+		appConfig.DBPort,
+		appConfig.TestDBName,
+		"integration-tests",
+		appConfig.DBSchema,
+	)
+
+	dbConfig, err := pgxpool.ParseConfig(connectionString)
+	if err != nil {
+		l.Error("Unable to parse database connection string", slog.Any("error", err))
+		panic("error bootstrapping the database")
+	}
+
+	dbConfig.ConnConfig.Tracer = &queryTracer{logger: l}
+
+	pool, err = pgxpool.NewWithConfig(context.Background(), dbConfig)
+	if err != nil {
+		l.Error("Unable to connect to the test database", slog.Any("error", err))
+		panic(fmt.Sprintf("Unable to connect to the test database: %v", err))
+	}
+
+	l.Info("Test Database bootstrapped")
 }
 
 func DBPool() *pgxpool.Pool {

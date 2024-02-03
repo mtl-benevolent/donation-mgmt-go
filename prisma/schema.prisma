@@ -132,8 +132,8 @@ model DonationPayment {
   donation Donation @relation(fields: [donation_id], references: [id])
   donation_id BigInt
 
-  amount BigInt
-  receipt_amount BigInt
+  amount_in_cents BigInt
+  receipt_amount_in_cents BigInt
 
   received_at DateTime @db.Timestamptz()
   created_at DateTime @db.Timestamptz() @default(now())

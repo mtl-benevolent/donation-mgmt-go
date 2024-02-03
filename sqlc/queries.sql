@@ -172,15 +172,15 @@ RETURNING *;
 
 -- name: InsertDonationPayment :one
 INSERT INTO donation_payments(
-	external_id, donation_id, amount, receipt_amount, received_at 
+	external_id, donation_id, amount_in_cents, receipt_amount_in_cents, received_at 
 ) VALUES(
 	sqlc.Arg('ExternalID'), sqlc.Arg('DonationID'), sqlc.Arg('Amount'), sqlc.Arg('ReceiptAmount'), sqlc.Arg('ReceivedAt')
 )
 RETURNING *;
 
 -- name: InsertPaymentToRecurrentDonation :one
-INSERT INTO donation_payments(external_id, donation_id, amount, receipt_amount)
-SELECT sqlc.Arg('ExternalID') as external_id, d.id, sqlc.Arg('Amount') as amount, sqlc.Arg('ReceiptAmount') as receipt_amount FROM donations d
+INSERT INTO donation_payments(external_id, donation_id, amount_in_cents, receipt_amount_in_cents)
+SELECT sqlc.Arg('ExternalID') as external_id, d.id, sqlc.Arg('AmountInCents') as amount, sqlc.Arg('ReceiptAmountInCents') as receipt_amount FROM donations d
 WHERE d.type = 'RECURRENT'
 	AND d.archived_at is null
 	AND d.fiscal_year = sqlc.Arg('FiscalYear')
