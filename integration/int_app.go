@@ -3,7 +3,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"time"
 
@@ -12,17 +11,16 @@ import (
 	"donation-mgmt/src/config"
 	"donation-mgmt/src/libs/db"
 	"donation-mgmt/src/libs/logger"
+	"donation-mgmt/src/organizations"
 )
 
 type IntegrationApp struct {
-	l          *slog.Logger
 	gs         *lifecycle.GracefulShutdown
 	readyCheck *lifecycle.ReadyCheck
 }
 
 func NewIntegrationApp() *IntegrationApp {
 	return &IntegrationApp{
-		l:          logger.Logger(),
 		gs:         lifecycle.NewGracefulShutdown(context.Background()),
 		readyCheck: lifecycle.NewReadyCheck(),
 	}
@@ -35,6 +33,9 @@ func (app *IntegrationApp) Start(ctx context.Context) error {
 	logger.BootstrapLogger(cfg)
 
 	db.Bootstrap(app.gs, app.readyCheck, cfg)
+
+	// Init modules
+	organizations.Bootstrap(nil)
 
 	app.readyCheck.StartPolling()
 
@@ -55,7 +56,7 @@ func (app *IntegrationApp) WaitForReady(ctx context.Context) error {
 			return ctx.Err()
 		case <-ticker.C:
 			if app.readyCheck.Ready() {
-				app.l.Info("Integration app is ready")
+				fmt.Println("App is ready")
 				return nil
 			}
 		}

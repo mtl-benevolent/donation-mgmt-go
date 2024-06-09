@@ -24,7 +24,7 @@ var activeTests atomic.Int32
 var initSync sync.Once
 var app *IntegrationApp
 
-func Prepare(t *testing.T) (*IntegrationApp, bool) {
+func Prepare(t *testing.T) bool {
 	t.Helper()
 
 	defer func() {
@@ -36,13 +36,13 @@ func Prepare(t *testing.T) (*IntegrationApp, bool) {
 
 	if !isRunningIntTests() && !isRunningDirectTest() {
 		t.Skip("Skipping integration tests")
-		return nil, false
+		return false
 	}
 
 	isSmokeTest := smokeTestRegex.MatchString(t.Name())
 	if testing.Short() && !isSmokeTest {
 		t.Skip("Test is not a smoke test. Smoke tests begin with 'Test_Smoke_'")
-		return nil, false
+		return false
 	}
 
 	activeTests.Add(1)
@@ -80,10 +80,10 @@ func Prepare(t *testing.T) (*IntegrationApp, bool) {
 	if app == nil {
 		t.Errorf("Integration app was not initialized. Cannot run test")
 		t.FailNow()
-		return nil, false
+		return false
 	}
 
-	return app, true
+	return true
 }
 
 func isRunningIntTests() bool {
