@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const RequestIdCtxKey = "request_id"
+const RequestIdCtxKey ContextKey = "request_id"
 
 func WithRequestId(ctx context.Context, requestId string) context.Context {
 	return context.WithValue(ctx, RequestIdCtxKey, requestId)

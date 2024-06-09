@@ -189,10 +189,13 @@ func authorize(capability string) gin.HandlerFunc {
 
 		if !canDo {
 			c.Error(&apperrors.OperationForbiddenError{
-				EntityName: p.EntityOrganization.String(),
-				EntityID:   fmt.Sprintf("%d", params.OrganizationID),
-				Extra: map[string]any{
-					"slug": params.OrganizationSlug,
+				EntityID: apperrors.EntityIdentifier{
+					EntityType: p.EntityOrganization.String(),
+					IDField:    "id",
+					EntityID:   fmt.Sprintf("%d", params.OrganizationID),
+					Extras: map[string]any{
+						"slug": params.OrganizationSlug,
+					},
 				},
 				Capability: capability,
 			})

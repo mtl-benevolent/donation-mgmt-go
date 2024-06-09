@@ -6,16 +6,11 @@ import (
 )
 
 type EntityAlreadyExistsError struct {
-	EntityName string
-	EntityID   string
-	Extra      map[string]any
+	EntityID EntityIdentifier
 }
 
 func (e *EntityAlreadyExistsError) Error() string {
-	withID := formatID(e.EntityID)
-	extras := formatExtras(e.Extra)
-
-	return fmt.Sprintf("%s entity %s%s already exists", e.EntityName, withID, extras)
+	return fmt.Sprintf("%s already exists", e.EntityID.String())
 }
 
 func (e *EntityAlreadyExistsError) ToRFC7807Error() RFC7807Error {
@@ -23,7 +18,7 @@ func (e *EntityAlreadyExistsError) ToRFC7807Error() RFC7807Error {
 		Type:     "AlreadyExists",
 		Title:    "Entity already exists",
 		Status:   http.StatusConflict,
-		Detail:   fmt.Sprintf("%s entity already exists", e.EntityName),
+		Detail:   fmt.Sprintf("%s entity already exists", e.EntityID.EntityType),
 		Instance: "",
 	}
 }

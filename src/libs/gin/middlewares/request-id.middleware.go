@@ -15,7 +15,7 @@ func RequestIdMiddleware(c *gin.Context) {
 		requestId = uuid.NewString()
 	}
 
-	c.Set(contextual.RequestIdCtxKey, requestId)
+	c.Set(string(contextual.RequestIdCtxKey), requestId)
 	c.Header(requestIdHttpHeader, requestId)
 
 	c.Next()

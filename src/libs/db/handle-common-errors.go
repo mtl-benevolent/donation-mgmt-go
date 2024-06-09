@@ -5,18 +5,19 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-type EntityIdentifier struct {
-	EntityName string
-	EntityID   string
-	Extra      map[string]any
-}
-
-func MapDBError(err error, identifier EntityIdentifier) error {
+func MapDBError(err error, identifier apperrors.EntityIdentifier) error {
 	if err == nil {
 		return nil
+	}
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return &apperrors.EntityNotFoundError{
+			EntityID: identifier,
+		}
 	}
 
 	var pgerr *pgconn.PgError
@@ -25,18 +26,14 @@ func MapDBError(err error, identifier EntityIdentifier) error {
 		// https://www.postgresql.org/docs/current/errcodes-appendix.html
 		case "23505": // unique violation
 			return &apperrors.EntityAlreadyExistsError{
-				EntityName: identifier.EntityName,
-				EntityID:   identifier.EntityID,
-				Extra:      identifier.Extra,
+				EntityID: identifier,
 			}
 		case "23503": // foreign key violation
 			return &apperrors.EntityNotFoundError{
-				EntityName: identifier.EntityName,
-				EntityID:   identifier.EntityID,
-				Extra:      identifier.Extra,
+				EntityID: identifier,
 			}
 		}
 	}
 
-	return fmt.Errorf("error executing %s DB Query: %w", identifier.EntityName, err)
+	return fmt.Errorf("error executing %s DB Query: %w", identifier.EntityType, err)
 }

@@ -53,7 +53,7 @@ func FirebaseAuthMiddleware() gin.HandlerFunc {
 		}
 
 		subject := token.Subject
-		c.Set(contextual.SubjectCtxKey, subject)
+		c.Set(string(contextual.SubjectCtxKey), subject)
 
 		l.Info("Successfully authorized user using Firebase", slog.String("subject", subject))
 		c.Next()

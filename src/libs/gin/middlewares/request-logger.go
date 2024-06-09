@@ -2,7 +2,7 @@ package middlewares
 
 import (
 	"donation-mgmt/src/libs/logger"
-	"donation-mgmt/src/system/contextual"
+	"donation-mgmt/src/system/logging"
 	"fmt"
 	"log/slog"
 	"time"
@@ -44,6 +44,6 @@ func LogRequestMiddleware(c *gin.Context) {
 		Protocol:      c.Request.Proto,
 	}
 
-	l := logger.ForComponent("WebServer").With(contextual.ContextLogData(c)...)
+	l := logger.ForComponent("WebServer").With(logging.ContextLogData(c)...)
 	l.Info(logMessage, slog.String("handler", c.HandlerName()), slog.String("path", c.FullPath()), slog.Any("httpRequest", httpReq))
 }

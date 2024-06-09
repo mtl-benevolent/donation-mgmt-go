@@ -6,16 +6,11 @@ import (
 )
 
 type EntityNotFoundError struct {
-	EntityName string
-	EntityID   string
-	Extra      map[string]any
+	EntityID EntityIdentifier
 }
 
 func (e *EntityNotFoundError) Error() string {
-	withID := formatID(e.EntityID)
-	extras := formatExtras(e.Extra)
-
-	return fmt.Sprintf("%s entity %s%s was not found", e.EntityName, withID, extras)
+	return fmt.Sprintf("%s was not found", e.EntityID.String())
 }
 
 func (e *EntityNotFoundError) ToRFC7807Error() RFC7807Error {
@@ -23,7 +18,7 @@ func (e *EntityNotFoundError) ToRFC7807Error() RFC7807Error {
 		Type:     "NotFound",
 		Title:    "Entity not found",
 		Status:   http.StatusNotFound,
-		Detail:   fmt.Sprintf("%s entity was not found", e.EntityName),
+		Detail:   fmt.Sprintf("%s entity was not found", e.EntityID.EntityType),
 		Instance: "",
 	}
 }

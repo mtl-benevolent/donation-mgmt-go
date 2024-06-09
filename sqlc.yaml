@@ -1,7 +1,7 @@
 version: "2"
 sql:
   - engine: "postgresql"
-    queries: "./sqlc/queries.sql"
+    queries: "./sqlc/"
     schema: "schema.gen.sql"
     gen:
       go:
@@ -11,6 +11,8 @@ sql:
         emit_interface: true
         emit_prepared_queries: true
         emit_pointers_for_null_types: true
+        emit_enum_valid_method: true
+        emit_sql_as_comment: true
 
         output_batch_file_name: batch.gen.go
         output_db_file_name: db.gen.go

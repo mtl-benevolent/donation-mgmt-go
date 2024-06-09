@@ -56,6 +56,7 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConf
 	router.Use(middlewares.LogRequestMiddleware)
 
 	router.Use(middlewares.RequestIdMiddleware)
+	router.Use(middlewares.PathParamsMiddleware)
 	router.Use(middlewares.ErrorHandler)
 	router.Use(gin.CustomRecovery(middlewares.PanicHandler))
 
@@ -68,10 +69,6 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConf
 	}
 
 	router.Use(middlewares.UnitOfWork)
-
-	router.GET("/panic", func(ctx *gin.Context) {
-		panic("Test Panic")
-	})
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf("0.0.0.0:%d", appConfig.HTTPPort),

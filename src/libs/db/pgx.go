@@ -4,7 +4,7 @@ import (
 	"context"
 	"donation-mgmt/src/config"
 	"donation-mgmt/src/libs/logger"
-	"donation-mgmt/src/system/contextual"
+	"donation-mgmt/src/system/logging"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -171,7 +171,7 @@ func (qt *queryTracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data
 	}
 
 	// TODO: Add Contextual data to the logger
-	qt.logger.With(contextual.ContextLogData(ctx)...).
+	qt.logger.With(logging.ContextLogData(ctx)...).
 		Info("SQL Query started", slog.String("sql", strings.TrimSpace(sql.String())), slog.String("txStatus", txStatus), slog.Any("args", data.Args))
 	return ctx
 }
@@ -179,10 +179,10 @@ func (qt *queryTracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data
 func (qt *queryTracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
 	// TODO: Add contextual data to the logger
 	if data.Err != nil {
-		qt.logger.With(contextual.ContextLogData(ctx)...).
+		qt.logger.With(logging.ContextLogData(ctx)...).
 			Error("SQL Query failed", slog.Any("error", data.Err))
 	} else {
-		qt.logger.With(contextual.ContextLogData(ctx)...).
+		qt.logger.With(logging.ContextLogData(ctx)...).
 			Info(
 				"SQL Query succeeded",
 				slog.Int64("rows_affected", data.CommandTag.RowsAffected()),
