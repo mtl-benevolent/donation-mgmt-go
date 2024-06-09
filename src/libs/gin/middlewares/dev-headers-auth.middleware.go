@@ -15,6 +15,6 @@ func DevHeadersAuthMiddleware(c *gin.Context) {
 		subject = DefaultSubject
 	}
 
-	c.Set(string(contextual.SubjectCtxKey), subject)
+	c.Set(contextual.SubjectCtxKey, subject)
 	c.Next()
 }

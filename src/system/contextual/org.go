@@ -2,8 +2,8 @@ package contextual
 
 import "context"
 
-const OrgIdCtxKey ContextKey = "org_id"
-const OrgSlugCtxKey ContextKey = "org_slug"
+const OrgIdCtxKey = "org_id"
+const OrgSlugCtxKey = "org_slug"
 
 func WithOrgId(ctx context.Context, orgId int64) context.Context {
 	return context.WithValue(ctx, OrgIdCtxKey, orgId)

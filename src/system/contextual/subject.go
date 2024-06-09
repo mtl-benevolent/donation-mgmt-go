@@ -2,7 +2,7 @@ package contextual
 
 import "context"
 
-const SubjectCtxKey ContextKey = "subject"
+const SubjectCtxKey = "subject"
 
 func WithSubject(ctx context.Context, subject string) context.Context {
 	return context.WithValue(ctx, SubjectCtxKey, subject)

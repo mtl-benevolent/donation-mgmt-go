@@ -2,7 +2,7 @@ package contextual
 
 import "context"
 
-const EnvCtxKey ContextKey = "env"
+const EnvCtxKey = "env"
 
 func WithEnv(ctx context.Context, env string) context.Context {
 	return context.WithValue(ctx, EnvCtxKey, env)
