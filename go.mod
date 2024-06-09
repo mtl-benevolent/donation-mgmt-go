@@ -11,6 +11,7 @@ require (
 	github.com/gretro/go-lifecycle v1.0.0
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/oklog/ulid/v2 v2.1.0
+	golang.org/x/net v0.20.0
 	google.golang.org/api v0.157.0
 )
 
@@ -64,7 +65,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.22.0 // indirect
 	golang.org/x/arch v0.6.0 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
-	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect

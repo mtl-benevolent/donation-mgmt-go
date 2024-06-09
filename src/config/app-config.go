@@ -12,9 +12,10 @@ var appConfig *AppConfiguration
 type AppEnvironment string
 
 const (
-	Development AppEnvironment = "development"
-	Staging     AppEnvironment = "staging"
-	Production  AppEnvironment = "production"
+	Development     AppEnvironment = "development"
+	IntegrationTest AppEnvironment = "int-tests"
+	Staging         AppEnvironment = "staging"
+	Production      AppEnvironment = "production"
 )
 
 type HTTPAuthenticationMethod string
@@ -39,7 +40,6 @@ type AppConfiguration struct {
 	DBPassword string `env:"DB_PASSWORD"`
 	DBName     string `env:"DB_NAME,default=donationsdb"`
 	DBSchema   string `env:"DB_SCHEMA,default=donations"`
-	TestDBName string `env:"TEST_DB_NAME,default=donations_testdb"`
 
 	RewriteForbiddenErrors bool `env:"REWRITE_FORBIDDEN,default=true"`
 

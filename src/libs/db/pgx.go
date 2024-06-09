@@ -103,37 +103,6 @@ func BootstrapSingleConnection(appConfig *config.AppConfiguration) (*pgx.Conn, e
 	return dbConn, nil
 }
 
-func BootstrapTestPool(appConfig *config.AppConfiguration) {
-	l := logger.ForComponent("TestPostgreSQL")
-
-	connectionString := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?application_name=%s&search_path=%s",
-		appConfig.DBUser,
-		appConfig.DBPassword,
-		appConfig.DBHost,
-		appConfig.DBPort,
-		appConfig.TestDBName,
-		"integration-tests",
-		appConfig.DBSchema,
-	)
-
-	dbConfig, err := pgxpool.ParseConfig(connectionString)
-	if err != nil {
-		l.Error("Unable to parse database connection string", slog.Any("error", err))
-		panic("error bootstrapping the database")
-	}
-
-	dbConfig.ConnConfig.Tracer = &queryTracer{logger: l}
-
-	pool, err = pgxpool.NewWithConfig(context.Background(), dbConfig)
-	if err != nil {
-		l.Error("Unable to connect to the test database", slog.Any("error", err))
-		panic(fmt.Sprintf("Unable to connect to the test database: %v", err))
-	}
-
-	l.Info("Test Database bootstrapped")
-}
-
 func DBPool() *pgxpool.Pool {
 	if pool == nil {
 		panic("Database not initialized")
