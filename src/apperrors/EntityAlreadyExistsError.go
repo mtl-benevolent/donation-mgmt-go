@@ -2,6 +2,7 @@ package apperrors
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 )
 
@@ -26,4 +27,8 @@ func (e *EntityAlreadyExistsError) ToRFC7807Error() RFC7807Error {
 		Detail:   fmt.Sprintf("%s entity already exists", e.EntityName),
 		Instance: "",
 	}
+}
+
+func (e *EntityAlreadyExistsError) Log(l *slog.Logger) {
+	l.Error("entity already exists", slog.String("entity_name", e.EntityName), slog.String("entity_id", e.EntityID), slog.Any("extra", e.Extra))
 }

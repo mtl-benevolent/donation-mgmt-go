@@ -13,28 +13,28 @@ import (
 )
 
 var roCapabilities = []string{
-	permissions.EntityOrganization.Capability(permissions.ActionRead),
-	permissions.EntityDonation.Capability(permissions.ActionRead),
+	permissions.Organization.Capability(permissions.Read),
+	permissions.Donation.Capability(permissions.Read),
 }
 
 var userCapabilities = append(
 	roCapabilities,
-	permissions.EntityDonation.Capability(permissions.ActionCreate),
-	permissions.EntityDonation.Capability(permissions.ActionUpdate),
+	permissions.Donation.Capability(permissions.Create),
+	permissions.Donation.Capability(permissions.Update),
 )
 
 var managerCapabilities = append(
 	userCapabilities,
-	permissions.EntityOrganization.Capability(permissions.ActionUpdate),
-	permissions.EntityDonation.Capability(permissions.ActionDelete),
-	permissions.EntityRoles.Capability(permissions.ActionRead),
-	permissions.EntityRoles.Capability(permissions.ActionUpdate),
+	permissions.Organization.Capability(permissions.Update),
+	permissions.Donation.Capability(permissions.Delete),
+	permissions.Roles.Capability(permissions.Read),
+	permissions.Roles.Capability(permissions.Update),
 )
 
 var adminCapabilities = append(
 	managerCapabilities,
-	permissions.EntityOrganization.Capability(permissions.ActionCreate),
-	permissions.EntitySandbox.Capability(permissions.ActionRead),
+	permissions.Organization.Capability(permissions.Create),
+	permissions.Sandbox.Capability(permissions.Read),
 )
 
 func main() {

@@ -3,9 +3,11 @@ package middlewares
 import (
 	"donation-mgmt/src/apperrors"
 	"donation-mgmt/src/libs/logger"
+	"donation-mgmt/src/system/contextual"
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,6 +25,7 @@ func PanicHandler(c *gin.Context, panicReason any) {
 
 func ErrorHandler(c *gin.Context) {
 	l := logger.ForComponent("ErrorHandler")
+	l = contextual.LoggerWithContextData(c, l)
 
 	c.Next()
 
@@ -32,7 +35,7 @@ func ErrorHandler(c *gin.Context) {
 
 	reqErr := c.Errors.Last().Err
 
-	rfcErr := apperrors.RFC7807Error{}
+	var rfcErr apperrors.RFC7807Error
 
 	if errors.Is(reqErr, io.EOF) {
 		rfcErr = apperrors.RFC7807Error{
@@ -52,6 +55,22 @@ func ErrorHandler(c *gin.Context) {
 		}
 	}
 
-	l.Error(fmt.Sprintf("error of type '%s' occurred: %s", rfcErr.Title, rfcErr.Detail))
+	if loggable, ok := reqErr.(apperrors.Loggable); ok {
+		loggable.Log(l)
+	} else {
+		defaultErrorLogger(l, reqErr, rfcErr)
+	}
+
 	c.JSON(rfcErr.Status, rfcErr)
+}
+
+func defaultErrorLogger(l *slog.Logger, err error, rfcError apperrors.RFC7807Error) {
+	l.Error(
+		"An error occurred with the HTTP request",
+		slog.String("error", err.Error()),
+		slog.String("type", fmt.Sprintf("%T", err)),
+		slog.String("title", rfcError.Title),
+		slog.Int("status", rfcError.Status),
+		slog.String("detail", rfcError.Detail),
+	)
 }

@@ -3,19 +3,19 @@ package permissions
 type Entity string
 
 const (
-	EntityOrganization Entity = "organization"
-	EntitySandbox      Entity = "sandbox"
-	EntityDonation     Entity = "donation"
-	EntityRoles        Entity = "roles"
+	Organization Entity = "organization"
+	Sandbox      Entity = "sandbox"
+	Donation     Entity = "donation"
+	Roles        Entity = "roles"
 )
 
 type Action string
 
 const (
-	ActionRead   Action = "read"
-	ActionCreate Action = "create"
-	ActionUpdate Action = "update"
-	ActionDelete Action = "delete"
+	Read   Action = "read"
+	Create Action = "create"
+	Update Action = "update"
+	Delete Action = "delete"
 )
 
 func (entity Entity) String() string {

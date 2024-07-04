@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"donation-mgmt/src/config"
+	"donation-mgmt/src/donations"
 	"donation-mgmt/src/libs/db"
 	firebaseadmin "donation-mgmt/src/libs/firebase-admin"
 	"donation-mgmt/src/libs/gin"
@@ -44,6 +45,7 @@ func main() {
 
 	permissions.Bootstrap()
 	organizations.Bootstrap(router)
+	donations.Bootstrap(router)
 
 	readyCheck.StartPolling()
 	logger.Info("Application is ready")

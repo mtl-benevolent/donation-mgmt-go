@@ -2,6 +2,7 @@ package apperrors
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	validation "github.com/go-ozzo/ozzo-validation"
@@ -42,4 +43,17 @@ func (e *ValidationError) ToRFC7807Error() RFC7807Error {
 		Details:  fieldErrors,
 		Instance: "",
 	}
+}
+
+func (e *ValidationError) Log(l *slog.Logger) {
+	fieldErrors := make(map[string]any)
+	if e.InnerError != nil {
+		if err, ok := e.InnerError.(validation.Errors); ok {
+			for field, err := range err {
+				fieldErrors[field] = err.Error()
+			}
+		}
+	}
+
+	l.Warn("validation error", slog.String("entity_name", e.EntityName), slog.Any("field_errors", fieldErrors))
 }

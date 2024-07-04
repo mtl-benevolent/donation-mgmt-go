@@ -9,18 +9,18 @@ import (
 	ozzo "github.com/go-ozzo/ozzo-validation"
 )
 
-type OrganizationDTO struct {
+type OrganizationDTOV1 struct {
 	Name      string    `json:"name"`
 	Slug      string    `json:"slug"`
 	CreatedAt time.Time `json:"createdAt"`
 }
 
-type CreateOrganizationRequest struct {
+type CreateOrganizationRequestV1 struct {
 	Name string `json:"name"`
 	Slug string `json:"slug"`
 }
 
-func (dto CreateOrganizationRequest) Validate() error {
+func (dto CreateOrganizationRequestV1) Validate() error {
 	err := ozzo.ValidateStruct(
 		&dto,
 		ozzo.Field(&dto.Name, ozzo.Required, ozzo.Length(1, 255)),
@@ -37,22 +37,13 @@ func (dto CreateOrganizationRequest) Validate() error {
 	return nil
 }
 
-type UpdateOrganizationRequest struct {
+type UpdateOrganizationRequestV1 struct {
 	Name string `json:"name"`
 }
 
-func (dto UpdateOrganizationRequest) Validate() error {
-	err := ozzo.ValidateStruct(
+func (dto UpdateOrganizationRequestV1) Validate() error {
+	return ozzo.ValidateStruct(
 		&dto,
 		ozzo.Field(&dto.Name, ozzo.Required, ozzo.Length(1, 255)),
 	)
-
-	if err != nil {
-		return &apperrors.ValidationError{
-			EntityName: reflect.TypeOf(dto).Name(),
-			InnerError: err,
-		}
-	}
-
-	return nil
 }

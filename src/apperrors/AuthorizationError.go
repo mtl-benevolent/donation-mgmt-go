@@ -2,6 +2,7 @@ package apperrors
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 )
@@ -34,4 +35,13 @@ func (e *AuthorizationError) ToRFC7807Error() RFC7807Error {
 		Detail:   e.Error(),
 		Instance: "",
 	}
+}
+
+func (e *AuthorizationError) Log(l *slog.Logger) {
+	innerErrorDetails := ""
+	if e.InnerError != nil {
+		innerErrorDetails = e.InnerError.Error()
+	}
+
+	l.Error("could not authorize request", slog.String("message", e.Message), slog.String("inner_error", innerErrorDetails))
 }
