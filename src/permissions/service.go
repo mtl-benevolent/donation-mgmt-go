@@ -5,7 +5,7 @@ import (
 	"donation-mgmt/src/data_access"
 	"donation-mgmt/src/libs/db"
 	"donation-mgmt/src/libs/logger"
-	"donation-mgmt/src/system/contextual"
+	"donation-mgmt/src/system/logging"
 	"errors"
 	"log/slog"
 
@@ -59,7 +59,7 @@ func (s *PermissionsService) HasCapabilities(ctx context.Context, params HasRequ
 }
 
 func (s *PermissionsService) checkGlobal(ctx context.Context, querier data_access.Querier, params HasRequiredPermissionsParams) (bool, error) {
-	logger := contextual.LoggerWithContextData(ctx, s.l)
+	logger := logging.WithContextData(ctx, s.l)
 
 	role, err := querier.HasGlobalCapabilities(ctx, data_access.HasGlobalCapabilitiesParams{
 		Capabilities: params.Capabilities,
@@ -81,7 +81,7 @@ func (s *PermissionsService) checkGlobal(ctx context.Context, querier data_acces
 }
 
 func (s *PermissionsService) checkForOrgBySlug(ctx context.Context, querier data_access.Querier, params HasRequiredPermissionsParams) (bool, error) {
-	logger := contextual.LoggerWithContextData(ctx, s.l)
+	logger := logging.WithContextData(ctx, s.l)
 
 	role, err := querier.HasCapabilitiesForOrgBySlug(ctx, data_access.HasCapabilitiesForOrgBySlugParams{
 		Capabilities:     params.Capabilities,
@@ -104,7 +104,7 @@ func (s *PermissionsService) checkForOrgBySlug(ctx context.Context, querier data
 }
 
 func (s *PermissionsService) checkForOrgByID(ctx context.Context, querier data_access.Querier, params HasRequiredPermissionsParams) (bool, error) {
-	logger := contextual.LoggerWithContextData(ctx, s.l)
+	logger := logging.WithContextData(ctx, s.l)
 
 	role, err := querier.HasCapabilitiesForOrgByID(ctx, data_access.HasCapabilitiesForOrgByIDParams{
 		Capabilities:   params.Capabilities,

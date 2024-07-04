@@ -2,15 +2,17 @@ package donations
 
 import (
 	"context"
+	"donation-mgmt/src/apperrors"
 	"donation-mgmt/src/data_access"
 	"donation-mgmt/src/libs/db"
+	"donation-mgmt/src/system/logging"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	nanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/oklog/ulid/v2"
 )
 
 const tzName = "America/Vancouver"
@@ -30,6 +32,7 @@ type CreateDonationParams struct {
 	DonorEmail             *string
 	DonorAddress           DonorAddress
 
+	FiscalYear  *int16
 	EmitReceipt bool
 	SendByEmail bool
 
@@ -39,14 +42,16 @@ type CreateDonationParams struct {
 	PaymentExternalID    *string
 }
 
-func (p CreateDonationParams) CanInsertPayment() bool {
+func (p CreateDonationParams) IsRecurrent() bool {
 	return p.ExternalID != nil && p.Type == data_access.DonationTypeRECURRENT
 }
 
-// CreateDonationOrAddPayment creates a new donation or adds a payment to an existing donation, depending on the
-// params provided. A payment can be added to a given donation if the donation is recurrent and if the ExternalID match
-// and entry in the database. Otherwise, a new donation is created.
-func (s *DonationsService) CreateDonationOrAddPayment(ctx context.Context, params CreateDonationParams) (DonationModel, error) {
+// AddPayment adds a payment to either an existing recurring donation or to a new donation. If no donation exists, a new one will be created.
+// A payment can be added to a given donation if the donation is recurrent and if the ExternalID match
+// an entry in the database. Otherwise, a new donation is created.
+func (s *DonationsService) AddPayment(ctx context.Context, params CreateDonationParams) (DonationModel, error) {
+	l := logging.WithContextData(ctx, s.l)
+
 	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
 	defer finalizer()
 
@@ -55,41 +60,58 @@ func (s *DonationsService) CreateDonationOrAddPayment(ctx context.Context, param
 		return DonationModel{}, err
 	}
 
-	if params.CanInsertPayment() {
+	if params.FiscalYear == nil {
+		l.Info("Fiscal year not provided, extracting from received at", "received_at", params.ReceivedAt, "timezone", tzName)
+
 		// TODO: Extract timezone from organization config
 		fiscalYear, err := extractFiscalYear(params.ReceivedAt, tzName)
 		if err != nil {
 			return DonationModel{}, fmt.Errorf("failed to extract fiscal year: %w", err)
 		}
 
+		params.FiscalYear = &fiscalYear
+	}
+
+	if params.IsRecurrent() {
+		l = l.With("external_id", params.ExternalID, "source", params.Source)
+
+		l.Info("Donation payment is recurrent, trying to insert payment to existing donation")
 		donation, err := s.tryInsertPayment(ctx, querier, data_access.InsertPaymentToRecurrentDonationParams{
 			ExternalID:           params.ExternalID,
 			AmountInCents:        params.PaymentAmountInCents,
 			ReceiptAmountInCents: params.ReceiptAmountInCents,
-			FiscalYear:           fiscalYear,
+			FiscalYear:           *params.FiscalYear,
 			OrganizationID:       params.OrganizationID,
 			Environment:          params.Environment,
 		})
 
 		if err != nil {
 			if !errors.Is(err, errRecurrentDonationNotFound) {
-				return DonationModel{}, err
+				return DonationModel{}, fmt.Errorf("failed to insert payment in donation: %w", err)
 			}
 
 			// We will create a new donation
+			l.Info("Recurrent donation not found, creating new donation")
 		} else {
+			l.Info("Payment inserted to existing donation")
 			return donation, nil
 		}
 	}
 
+	l.Info("Creating new donation")
 	insertDonation, err := mapParamsToInsertDonation(params)
 	if err != nil {
-		return DonationModel{}, err
+		return DonationModel{}, fmt.Errorf("failed mapping donation to db model: %w", err)
 	}
 
 	insertPayment := mapParamsToInsertPayment(params)
 
-	return s.insertDonation(ctx, querier, insertDonation, insertPayment)
+	donation, err := s.insertDonation(ctx, querier, insertDonation, insertPayment)
+	if err != nil {
+		return DonationModel{}, fmt.Errorf("failed to insert donation: %w", err)
+	}
+
+	return donation, nil
 }
 
 func (s *DonationsService) tryInsertPayment(
@@ -103,9 +125,9 @@ func (s *DonationsService) tryInsertPayment(
 			return DonationModel{}, errRecurrentDonationNotFound
 		}
 
-		return DonationModel{}, db.MapDBError(err, db.EntityIdentifier{
-			EntityName: "DonationPayment",
-			Extra: map[string]interface{}{
+		return DonationModel{}, db.MapDBError(err, apperrors.EntityIdentifier{
+			EntityType: "DonationPayment",
+			Extras: map[string]interface{}{
 				"externalID":     payment.ExternalID,
 				"fiscalYear":     payment.FiscalYear,
 				"organizationId": payment.OrganizationID,
@@ -126,15 +148,9 @@ func mapParamsToInsertDonation(params CreateDonationParams) (data_access.InsertD
 		return data_access.InsertDonationParams{}, fmt.Errorf("failed to marshal donor address: %w", err)
 	}
 
-	// TODO: Extract timezone from organization config
-	fiscalYear, err := extractFiscalYear(params.ReceivedAt, tzName)
-	if err != nil {
-		return data_access.InsertDonationParams{}, fmt.Errorf("failed to extract fiscal year: %w", err)
-	}
-
-	slug, err := nanoid.New()
-	if err != nil {
-		return data_access.InsertDonationParams{}, fmt.Errorf("failed to generate slug: %w", err)
+	slug := ulid.Make().String()
+	if params.FiscalYear == nil {
+		return data_access.InsertDonationParams{}, errors.New("fiscal year is required")
 	}
 
 	donationToInsert := data_access.InsertDonationParams{
@@ -142,7 +158,7 @@ func mapParamsToInsertDonation(params CreateDonationParams) (data_access.InsertD
 		OrganizationID:         params.OrganizationID,
 		ExternalID:             params.ExternalID,
 		Environment:            params.Environment,
-		FiscalYear:             fiscalYear,
+		FiscalYear:             *params.FiscalYear,
 		Reason:                 params.Reason,
 		Type:                   params.Type,
 		Source:                 params.Source,
@@ -185,17 +201,17 @@ func (s *DonationsService) insertDonation(
 ) (DonationModel, error) {
 	insertedDonation, err := querier.InsertDonation(ctx, donation)
 	if err != nil {
-		return DonationModel{}, db.MapDBError(err, db.EntityIdentifier{
-			EntityName: "Donation",
-			Extra:      map[string]interface{}{"slug": donation.Slug, "externalID": donation.ExternalID},
+		return DonationModel{}, db.MapDBError(err, apperrors.EntityIdentifier{
+			EntityType: "Donation",
+			Extras:     map[string]interface{}{"slug": donation.Slug, "externalID": donation.ExternalID},
 		})
 	}
 
 	insertedPayment, err := querier.InsertDonationPayment(ctx, payment)
 	if err != nil {
-		return DonationModel{}, db.MapDBError(err, db.EntityIdentifier{
-			EntityName: "DonationPayment",
-			Extra:      map[string]interface{}{"donationID": insertedDonation.ID, "externalID": payment.ExternalID},
+		return DonationModel{}, db.MapDBError(err, apperrors.EntityIdentifier{
+			EntityType: "DonationPayment",
+			Extras:     map[string]interface{}{"donationID": insertedDonation.ID, "externalID": payment.ExternalID},
 		})
 	}
 

@@ -5,10 +5,11 @@ import "github.com/gin-gonic/gin"
 var orgService *OrganizationService
 
 func Bootstrap(router *gin.Engine) {
-	orgService = NewOrganizationService()
+	if router != nil {
+		registerRoutes(router)
+	}
 
-	v1 := NewControllerV1()
-	v1.RegisterRoutes(router)
+	orgService = NewOrganizationService()
 }
 
 func GetOrgService() *OrganizationService {

@@ -7,6 +7,7 @@ import (
 	"donation-mgmt/src/libs/db"
 	"donation-mgmt/src/pagination"
 	"errors"
+	"fmt"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -29,14 +30,11 @@ func (s *OrganizationService) GetOrganizationBySlug(ctx context.Context, slug st
 
 	org, err := repo.GetOrganizationBySlug(ctx, slug)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return data_access.Organization{}, &apperrors.EntityNotFoundError{
-				EntityName: "Organization",
-				EntityID:   slug,
-			}
-		}
-
-		return data_access.Organization{}, err
+		return data_access.Organization{}, db.MapDBError(err, apperrors.EntityIdentifier{
+			EntityType: "Organization",
+			IDField:    "slug",
+			EntityID:   slug,
+		})
 	}
 
 	return org, nil
@@ -53,14 +51,11 @@ func (s *OrganizationService) GetOrganizationIDForSlug(ctx context.Context, slug
 
 	orgID, err := repo.GetOrganizationIDBySlug(ctx, slug)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, &apperrors.EntityNotFoundError{
-				EntityName: "Organization",
-				EntityID:   slug,
-			}
-		}
-
-		return 0, err
+		return 0, db.MapDBError(err, apperrors.EntityIdentifier{
+			EntityType: "Organization",
+			IDField:    "slug",
+			EntityID:   slug,
+		})
 	}
 
 	return orgID, nil
@@ -81,11 +76,14 @@ func (s *OrganizationService) ListFiscalYearsForOrganization(ctx context.Context
 	})
 
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return []int16{}, nil
-		}
-
-		return []int16{}, err
+		return []int16{}, db.MapDBError(err, apperrors.EntityIdentifier{
+			EntityType: "Organization",
+			IDField:    "id",
+			EntityID:   fmt.Sprintf("%d", orgID),
+			Extras: map[string]interface{}{
+				"environment": environment,
+			},
+		})
 	}
 
 	return fiscalYears, nil
@@ -160,9 +158,12 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, params dat
 
 	inserted, err := repo.InsertOrganization(ctx, params)
 	if err != nil {
-		return inserted, db.MapDBError(err, db.EntityIdentifier{
-			EntityName: "Organization",
-			EntityID:   params.Slug,
+		return inserted, db.MapDBError(err, apperrors.EntityIdentifier{
+			EntityType: "Organization",
+			Extras: map[string]interface{}{
+				"name": params.Name,
+				"slug": params.Slug,
+			},
 		})
 	}
 
@@ -180,8 +181,8 @@ func (s *OrganizationService) UpdateOrganization(ctx context.Context, params dat
 
 	updated, err := repo.UpdateOrganizationBySlug(ctx, params)
 	if err != nil {
-		return updated, db.MapDBError(err, db.EntityIdentifier{
-			EntityName: "Organization",
+		return updated, db.MapDBError(err, apperrors.EntityIdentifier{
+			EntityType: "Organization",
 			EntityID:   params.Slug,
 		})
 	}

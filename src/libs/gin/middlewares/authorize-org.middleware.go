@@ -47,11 +47,14 @@ func WithOrgAuthorization(orgSlugParam string, capabilities ...string) gin.Handl
 
 		if !canDo {
 			c.Error(&apperrors.OperationForbiddenError{
-				EntityName: permissions.Organization.String(),
-				EntityID:   fmt.Sprintf("%d", params.OrganizationID),
-				Extra: map[string]any{
-					"slug":         params.OrganizationSlug,
-					"capabilities": capabilities,
+				EntityID: apperrors.EntityIdentifier{
+					EntityType: permissions.Organization.String(),
+					IDField:    "id",
+					EntityID:   fmt.Sprintf("%d", params.OrganizationID),
+					Extras: map[string]any{
+						"slug":         params.OrganizationSlug,
+						"capabilities": capabilities,
+					},
 				},
 			})
 

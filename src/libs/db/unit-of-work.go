@@ -4,7 +4,7 @@ import (
 	"context"
 	"donation-mgmt/src/data_access"
 	"donation-mgmt/src/libs/logger"
-	"donation-mgmt/src/system/contextual"
+	"donation-mgmt/src/system/logging"
 	"errors"
 	"log/slog"
 	"sync"
@@ -50,7 +50,7 @@ func (uow *UnitOfWork) WillUseTransaction() bool {
 }
 
 func (uow *UnitOfWork) GetQuerier(ctx context.Context) (data_access.Querier, error) {
-	l := uow.l.With(contextual.ContextLogData(ctx)...)
+	l := uow.l.With(logging.ContextLogData(ctx)...)
 
 	if uow.released {
 		return nil, ErrUnitOfWorkReleased
@@ -92,7 +92,7 @@ func (uow *UnitOfWork) GetQuerier(ctx context.Context) (data_access.Querier, err
 
 // Finalize commits or rolls back the transaction (if necessary) and releases the database connection.
 func (uow *UnitOfWork) Finalize(ctx context.Context, isSuccess bool) error {
-	l := uow.l.With(contextual.ContextLogData(ctx)...)
+	l := uow.l.With(logging.ContextLogData(ctx)...)
 
 	if uow.released {
 		l.Debug("UnitOfWork already released. Nothing to do...")

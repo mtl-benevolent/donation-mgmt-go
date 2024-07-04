@@ -20,9 +20,9 @@ schema.gen.sql: ./prisma/schema.prisma
 	@npx prisma migrate diff --script --from-empty --to-schema-datamodel=./prisma/schema.prisma > schema.gen.sql
 
 .PHONY: sqlc
-sqlc:
+sqlc: schema.gen.sql
 	@echo "[INFO] Installing sqlc"
-	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.23.0
+	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.26.0
 
 	@echo "Generating Data Access Layer using sqlc"
 	@$$(go env GOPATH)/bin/sqlc generate

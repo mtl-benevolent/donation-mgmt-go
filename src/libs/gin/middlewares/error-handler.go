@@ -3,7 +3,7 @@ package middlewares
 import (
 	"donation-mgmt/src/apperrors"
 	"donation-mgmt/src/libs/logger"
-	"donation-mgmt/src/system/contextual"
+	"donation-mgmt/src/system/logging"
 	"errors"
 	"fmt"
 	"io"
@@ -25,7 +25,7 @@ func PanicHandler(c *gin.Context, panicReason any) {
 
 func ErrorHandler(c *gin.Context) {
 	l := logger.ForComponent("ErrorHandler")
-	l = contextual.LoggerWithContextData(c, l)
+	l = logging.WithContextData(c, l)
 
 	c.Next()
 

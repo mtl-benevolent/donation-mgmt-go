@@ -8,24 +8,18 @@ import (
 )
 
 type OperationForbiddenError struct {
-	EntityName string
-	EntityID   string
-	Extra      map[string]any
+	EntityID   EntityIdentifier
+	Capability string
 }
 
 func (e *OperationForbiddenError) Error() string {
-	withID := formatID(e.EntityID)
-	extras := formatExtras(e.Extra)
-
-	return fmt.Sprintf("Operation forbidden on %s entity %s%s.", e.EntityName, withID, extras)
+	return fmt.Sprintf("Forbidden to perform '%s' operation on %s", e.Capability, e.EntityID.String())
 }
 
 func (e *OperationForbiddenError) ToRFC7807Error() RFC7807Error {
 	if config.AppConfig().RewriteForbiddenErrors {
 		notFoundErr := &EntityNotFoundError{
-			EntityName: e.EntityName,
-			EntityID:   e.EntityID,
-			Extra:      e.Extra,
+			EntityID: e.EntityID,
 		}
 
 		return notFoundErr.ToRFC7807Error()
@@ -41,5 +35,5 @@ func (e *OperationForbiddenError) ToRFC7807Error() RFC7807Error {
 }
 
 func (e *OperationForbiddenError) Log(l *slog.Logger) {
-	l.Error("operation forbidden", slog.String("entity_name", e.EntityName), slog.String("entity_id", e.EntityID), slog.Any("extra", e.Extra))
+	l.Error("operation forbidden", e.EntityID.LoggableFields()...)
 }

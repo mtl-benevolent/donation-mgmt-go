@@ -4,63 +4,42 @@ import (
 	"donation-mgmt/src/apperrors"
 	"donation-mgmt/src/data_access"
 	"donation-mgmt/src/libs/db"
-	"donation-mgmt/src/libs/gin/ginutils"
-	"donation-mgmt/src/libs/gin/middlewares"
 	"donation-mgmt/src/pagination"
 	p "donation-mgmt/src/permissions"
 	"donation-mgmt/src/system/contextual"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-const (
-	orgSlugParam = "orgSlug"
-)
-
-type ControllerV1 struct {
-	permissionsService *p.PermissionsService
-	orgService         *OrganizationService
-}
-
-func NewControllerV1() *ControllerV1 {
-	return &ControllerV1{
-		permissionsService: p.GetPermissionsService(),
-		orgService:         GetOrgService(),
-	}
-}
-
-func (c *ControllerV1) RegisterRoutes(router *gin.Engine) {
+func registerRoutes(router *gin.Engine) {
 	orgRouter := router.Group("/v1/organizations")
 
-	orgCreate := p.Organization.Capability(p.Create)
-	orgRead := p.Organization.Capability(p.Read)
-	orgUpdate := p.Organization.Capability(p.Update)
-
-	orgRouter.GET("", c.ListOrganizationsV1)
-	orgRouter.POST("", middlewares.WithGlobalAuthorization(p.Organization.String(), orgCreate), c.CreateOrganizationV1)
-	orgRouter.GET("/:orgSlug", middlewares.WithOrgAuthorization(orgSlugParam, orgRead), c.GetOrganizationBySlugV1)
-	orgRouter.PUT("/:orgSlug", middlewares.WithOrgAuthorization(orgSlugParam, orgUpdate), c.UpdateOrganizationV1)
+	orgRouter.GET("", ListOrganizationsV1)
+	orgRouter.POST("", authorize(p.Organization.Capability(p.Create)), CreateOrganizationV1)
+	orgRouter.GET("/:slug", authorize(p.Organization.Capability(p.Read)), GetOrganizationBySlugV1)
+	orgRouter.PUT("/:slug", authorize(p.Organization.Capability(p.Update)), UpdateOrganizationV1)
 }
 
-func (c *ControllerV1) ListOrganizationsV1(ctx *gin.Context) {
-	subject := contextual.GetSubject(ctx)
+func ListOrganizationsV1(c *gin.Context) {
+	subject := contextual.GetSubject(c)
 	if subject == "" {
-		ctx.Error(&apperrors.AuthorizationError{
+		c.Error(&apperrors.AuthorizationError{
 			Message: "User is not authenticated",
 		})
 		return
 	}
 
-	page := pagination.ParsePaginationOptions(ctx)
+	page := pagination.ParsePaginationOptions(c)
 
-	hasGlobalOrgRead, err := p.GetPermissionsService().HasCapabilities(ctx, p.HasRequiredPermissionsParams{
+	hasGlobalOrgRead, err := p.GetPermissionsService().HasCapabilities(c, p.HasRequiredPermissionsParams{
 		Subject:      subject,
 		Capabilities: []string{p.Organization.Capability(p.Read)},
 		MustBeGlobal: true,
 	})
 	if err != nil {
-		ctx.Error(err)
+		c.Error(err)
 		return
 	}
 
@@ -69,18 +48,18 @@ func (c *ControllerV1) ListOrganizationsV1(ctx *gin.Context) {
 		scopeQueryBySubject = ""
 	}
 
-	results, err := GetOrgService().GetOrganizations(ctx, ListOrganizationsParams{
+	results, err := GetOrgService().GetOrganizations(c, ListOrganizationsParams{
 		Subject:     scopeQueryBySubject,
 		PageOptions: page,
 	})
 	if err != nil {
-		ctx.Error(err)
+		c.Error(err)
 		return
 	}
 
 	resultDtos := make([]OrganizationDTOV1, len(results.Results))
 	for i, org := range results.Results {
-		resultDtos[i] = mapOrgToDTOV1(org)
+		resultDtos[i] = mapOrgToDTO(org)
 	}
 
 	dto := pagination.PaginatedDTO[OrganizationDTOV1]{
@@ -90,85 +69,141 @@ func (c *ControllerV1) ListOrganizationsV1(ctx *gin.Context) {
 		Limit:   page.Limit,
 	}
 
-	ctx.JSON(http.StatusOK, dto)
+	c.JSON(http.StatusOK, dto)
 }
 
-func (c *ControllerV1) CreateOrganizationV1(ctx *gin.Context) {
-	uow := db.GetUnitOfWorkFromCtx(ctx)
+func CreateOrganizationV1(c *gin.Context) {
+	uow := db.GetUnitOfWorkFromCtx(c)
 	uow.UseTransaction()
 
-	reqDTO, err := ginutils.DeserializeJSON[CreateOrganizationRequestV1](ctx)
-	if err != nil {
-		ctx.Error(err)
+	reqDTO := CreateOrganizationRequestV1{}
+	if err := c.ShouldBindJSON(&reqDTO); err != nil {
+		c.Error(err)
 		return
 	}
 
 	if err := reqDTO.Validate(); err != nil {
-		ctx.Error(err)
+		c.Error(err)
 		return
 	}
 
-	org, err := GetOrgService().CreateOrganization(ctx, data_access.InsertOrganizationParams{
+	org, err := GetOrgService().CreateOrganization(c, data_access.InsertOrganizationParams{
 		Name: reqDTO.Name,
 		Slug: reqDTO.Slug,
 	})
 
 	if err != nil {
-		ctx.Error(err)
+		c.Error(err)
 		return
 	}
 
-	dto := mapOrgToDTOV1(org)
-	ctx.JSON(http.StatusCreated, dto)
+	dto := mapOrgToDTO(org)
+	c.JSON(http.StatusCreated, dto)
 }
 
-func (c *ControllerV1) GetOrganizationBySlugV1(ctx *gin.Context) {
-	slug := ctx.Params.ByName(orgSlugParam)
+func GetOrganizationBySlugV1(c *gin.Context) {
+	slug := c.Params.ByName("slug")
 
-	org, err := c.orgService.GetOrganizationBySlug(ctx, slug)
+	org, err := GetOrgService().GetOrganizationBySlug(c, slug)
 	if err != nil {
-		ctx.Error(err)
+		c.Error(err)
 		return
 	}
 
-	dto := mapOrgToDTOV1(org)
+	dto := mapOrgToDTO(org)
 
-	ctx.JSON(http.StatusOK, dto)
+	c.JSON(http.StatusOK, dto)
 }
 
-func (c *ControllerV1) UpdateOrganizationV1(ctx *gin.Context) {
-	slug := ctx.Params.ByName(orgSlugParam)
+func UpdateOrganizationV1(c *gin.Context) {
+	slug := c.Params.ByName("slug")
 
-	reqDTO, err := ginutils.DeserializeJSON[UpdateOrganizationRequestV1](ctx)
-	if err != nil {
-		ctx.Error(err)
+	reqDTO := UpdateOrganizationRequestV1{}
+	if err := c.ShouldBindJSON(&reqDTO); err != nil {
+		c.Error(err)
 		return
 	}
 
 	if err := reqDTO.Validate(); err != nil {
-		ctx.Error(err)
+		c.Error(err)
 		return
 	}
 
-	org, err := c.orgService.UpdateOrganization(ctx, data_access.UpdateOrganizationBySlugParams{
+	org, err := GetOrgService().UpdateOrganization(c, data_access.UpdateOrganizationBySlugParams{
 		Slug: slug,
 		Name: reqDTO.Name,
 	})
 
 	if err != nil {
-		ctx.Error(err)
+		c.Error(err)
 		return
 	}
 
-	dto := mapOrgToDTOV1(org)
+	dto := mapOrgToDTO(org)
 
-	ctx.JSON(http.StatusOK, dto)
+	c.JSON(http.StatusOK, dto)
 }
 
-func mapOrgToDTOV1(org data_access.Organization) OrganizationDTOV1 {
+func mapOrgToDTO(org data_access.Organization) OrganizationDTOV1 {
 	return OrganizationDTOV1{
 		Name:      org.Name,
 		Slug:      org.Slug,
 		CreatedAt: org.CreatedAt,
+	}
+}
+
+func authorize(capability string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		subject := contextual.GetSubject(c)
+		if subject == "" {
+			c.Error(&apperrors.AuthorizationError{
+				Message: "User is not authenticated",
+			})
+			c.Abort()
+			return
+		}
+
+		slug, found := c.Params.Get("slug")
+
+		var params p.HasRequiredPermissionsParams
+		if !found {
+			params = p.HasRequiredPermissionsParams{
+				Subject:      subject,
+				Capabilities: []string{capability},
+				MustBeGlobal: true,
+			}
+		} else {
+			params = p.HasRequiredPermissionsParams{
+				Subject:          subject,
+				Capabilities:     []string{capability},
+				OrganizationSlug: slug,
+			}
+		}
+
+		canDo, err := p.GetPermissionsService().HasCapabilities(c, params)
+		if err != nil {
+			c.Error(err)
+			c.Abort()
+			return
+		}
+
+		if !canDo {
+			c.Error(&apperrors.OperationForbiddenError{
+				EntityID: apperrors.EntityIdentifier{
+					EntityType: p.Organization.String(),
+					IDField:    "id",
+					EntityID:   fmt.Sprintf("%d", params.OrganizationID),
+					Extras: map[string]any{
+						"slug": params.OrganizationSlug,
+					},
+				},
+				Capability: capability,
+			})
+
+			c.Abort()
+			return
+		}
+
+		c.Next()
 	}
 }

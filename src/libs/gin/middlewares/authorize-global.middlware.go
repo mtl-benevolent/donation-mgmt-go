@@ -34,9 +34,11 @@ func WithGlobalAuthorization(entityType string, capabilities ...string) gin.Hand
 
 		if !canDo {
 			c.Error(&apperrors.OperationForbiddenError{
-				EntityName: entityType,
-				Extra: map[string]any{
-					"capabilities": capabilities,
+				EntityID: apperrors.EntityIdentifier{
+					EntityType: entityType,
+					Extras: map[string]any{
+						"capabilities": capabilities,
+					},
 				},
 			})
 

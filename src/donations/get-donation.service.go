@@ -6,10 +6,7 @@ import (
 	"donation-mgmt/src/data_access"
 	"donation-mgmt/src/libs/db"
 	"encoding/json"
-	"errors"
 	"fmt"
-
-	"github.com/jackc/pgx/v5"
 )
 
 type GetDonationByIDParams struct {
@@ -34,21 +31,11 @@ func (s *DonationsService) GetDonationByID(ctx context.Context, params GetDonati
 	})
 
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return DonationModel{}, &apperrors.EntityNotFoundError{
-				EntityName: "Donation",
-				EntityID:   fmt.Sprintf("%d", params.DonationID),
-				Extra: map[string]interface{}{
-					"organizationId": params.OrganizationID,
-					"environment":    params.Environment,
-				},
-			}
-		}
-
-		return DonationModel{}, db.MapDBError(err, db.EntityIdentifier{
-			EntityName: "Donation",
+		return DonationModel{}, db.MapDBError(err, apperrors.EntityIdentifier{
+			EntityType: "Donation",
+			IDField:    "id",
 			EntityID:   fmt.Sprintf("%d", params.DonationID),
-			Extra: map[string]interface{}{
+			Extras: map[string]interface{}{
 				"organizationId": params.OrganizationID,
 				"environment":    params.Environment,
 			},
@@ -80,21 +67,11 @@ func (s *DonationsService) GetDonationBySlug(ctx context.Context, params GetDona
 	})
 
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return DonationModel{}, &apperrors.EntityNotFoundError{
-				EntityName: "Donation",
-				Extra: map[string]interface{}{
-					"slug":           params.Slug,
-					"organizationId": params.OrganizationID,
-					"environment":    params.Environment,
-				},
-			}
-		}
-
-		return DonationModel{}, db.MapDBError(err, db.EntityIdentifier{
-			EntityName: "Donation",
-			Extra: map[string]interface{}{
-				"slug":           params.Slug,
+		return DonationModel{}, db.MapDBError(err, apperrors.EntityIdentifier{
+			EntityType: "Donation",
+			IDField:    "slug",
+			EntityID:   params.Slug,
+			Extras: map[string]interface{}{
 				"organizationId": params.OrganizationID,
 				"environment":    params.Environment,
 			},
