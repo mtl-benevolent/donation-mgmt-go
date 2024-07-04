@@ -4,10 +4,10 @@ import (
 	"donation-mgmt/src/apperrors"
 	"donation-mgmt/src/data_access"
 	"donation-mgmt/src/libs/db"
+	"donation-mgmt/src/libs/gin/middlewares"
 	"donation-mgmt/src/pagination"
 	p "donation-mgmt/src/permissions"
 	"donation-mgmt/src/system/contextual"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -16,10 +16,10 @@ import (
 func registerRoutes(router *gin.Engine) {
 	orgRouter := router.Group("/v1/organizations")
 
-	orgRouter.GET("", ListOrganizationsV1)
-	orgRouter.POST("", authorize(p.Organization.Capability(p.Create)), CreateOrganizationV1)
-	orgRouter.GET("/:slug", authorize(p.Organization.Capability(p.Read)), GetOrganizationBySlugV1)
-	orgRouter.PUT("/:slug", authorize(p.Organization.Capability(p.Update)), UpdateOrganizationV1)
+	orgRouter.GET("", ListOrganizationsV1) // Permissions are handled as part of the query
+	orgRouter.POST("", middlewares.WithGlobalAuthorization(p.Organization, p.Organization.Capability(p.Create)), CreateOrganizationV1)
+	orgRouter.GET("/:slug", middlewares.WithOrgAuthorization("slug", p.Organization.Capability(p.Read)), GetOrganizationBySlugV1)
+	orgRouter.PUT("/:slug", middlewares.WithOrgAuthorization("slug", p.Organization.Capability(p.Update)), UpdateOrganizationV1)
 }
 
 func ListOrganizationsV1(c *gin.Context) {
@@ -149,61 +149,5 @@ func mapOrgToDTO(org data_access.Organization) OrganizationDTOV1 {
 		Name:      org.Name,
 		Slug:      org.Slug,
 		CreatedAt: org.CreatedAt,
-	}
-}
-
-func authorize(capability string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		subject := contextual.GetSubject(c)
-		if subject == "" {
-			c.Error(&apperrors.AuthorizationError{
-				Message: "User is not authenticated",
-			})
-			c.Abort()
-			return
-		}
-
-		slug, found := c.Params.Get("slug")
-
-		var params p.HasRequiredPermissionsParams
-		if !found {
-			params = p.HasRequiredPermissionsParams{
-				Subject:      subject,
-				Capabilities: []string{capability},
-				MustBeGlobal: true,
-			}
-		} else {
-			params = p.HasRequiredPermissionsParams{
-				Subject:          subject,
-				Capabilities:     []string{capability},
-				OrganizationSlug: slug,
-			}
-		}
-
-		canDo, err := p.GetPermissionsService().HasCapabilities(c, params)
-		if err != nil {
-			c.Error(err)
-			c.Abort()
-			return
-		}
-
-		if !canDo {
-			c.Error(&apperrors.OperationForbiddenError{
-				EntityID: apperrors.EntityIdentifier{
-					EntityType: p.Organization.String(),
-					IDField:    "id",
-					EntityID:   fmt.Sprintf("%d", params.OrganizationID),
-					Extras: map[string]any{
-						"slug": params.OrganizationSlug,
-					},
-				},
-				Capability: capability,
-			})
-
-			c.Abort()
-			return
-		}
-
-		c.Next()
 	}
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func WithGlobalAuthorization(entityType string, capabilities ...string) gin.HandlerFunc {
+func WithGlobalAuthorization(entityType permissions.Entity, capabilities ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		subject := contextual.GetSubject(c)
 		if subject == "" {
@@ -35,7 +35,7 @@ func WithGlobalAuthorization(entityType string, capabilities ...string) gin.Hand
 		if !canDo {
 			c.Error(&apperrors.OperationForbiddenError{
 				EntityID: apperrors.EntityIdentifier{
-					EntityType: entityType,
+					EntityType: string(entityType),
 					Extras: map[string]any{
 						"capabilities": capabilities,
 					},
