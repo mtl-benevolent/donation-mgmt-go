@@ -1,6 +1,6 @@
 module donation-mgmt
 
-go 1.22.4
+go 1.22.5
 
 require (
 	firebase.google.com/go/v4 v4.13.0

@@ -1,4 +1,4 @@
-FROM golang:1.22.4-bookworm AS deps
+FROM golang:1.22.5-bookworm AS deps
 
 ENV NODE_MAJOR=20
 
@@ -30,7 +30,7 @@ COPY ./ ./
 
 RUN make build
 
-FROM alpine:3.18.3
+FROM alpine:3.20
 
 WORKDIR /app
 
