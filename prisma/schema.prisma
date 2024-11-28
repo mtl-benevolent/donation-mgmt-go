@@ -7,12 +7,12 @@ generator client {
 }
 
 datasource db {
-  provider = "cockroachdb"
+  provider = "postgres"
   url      = env("PG_MIGRATION_DB")
 }
 
 model Organization {
-  id BigInt @id @default(sequence())
+  id BigInt @id @default(autoincrement())
   name String
   slug String @unique
 
@@ -27,7 +27,7 @@ model Organization {
 }
 
 model Role {
-  id BigInt @id @default(sequence())
+  id BigInt @id @default(autoincrement())
   name String @unique
 
   capabilities String[]
@@ -42,7 +42,7 @@ model Role {
 }
 
 model ScopedUserRole {
-  id BigInt @id @default(sequence())
+  id BigInt @id @default(autoincrement())
 
   subject String
 
@@ -59,7 +59,7 @@ model ScopedUserRole {
 }
 
 model GlobalUserRole {
-  id BigInt @id @default(sequence())
+  id BigInt @id @default(autoincrement())
 
   subject String @unique
 
@@ -90,7 +90,7 @@ enum DonationSource {
 }
 
 model Donation {
-  id BigInt @id @default(sequence())
+  id BigInt @id @default(autoincrement())
   slug String @unique
 
   organization Organization @relation(fields: [organization_id], references: [id])
@@ -99,7 +99,7 @@ model Donation {
   external_id String?
   environment Enviroment
 
-  fiscal_year Int @db.Int2
+  fiscal_year Int @db.SmallInt
   reason String?
   type DonationType
   source DonationSource
@@ -126,7 +126,7 @@ model Donation {
 }
 
 model DonationPayment {
-  id BigInt @id @default(sequence())
+  id BigInt @id @default(autoincrement())
   external_id String?
   
   donation Donation @relation(fields: [donation_id], references: [id])
@@ -143,7 +143,7 @@ model DonationPayment {
 }
 
 model DonationComment {
-  id BigInt @id @default(sequence())
+  id BigInt @id @default(autoincrement())
   
   comment String
   author String

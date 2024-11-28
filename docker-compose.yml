@@ -1,19 +1,19 @@
 services:
-  roach1:
-    image: cockroachdb/cockroach:latest
+  postgres:
+    image: postgres:17.2-alpine3.20
     volumes:
-      - ROACH1_DATA:/cockroach/cockroach-data
+      - POSTGRES_DATA:/var/lib/postgresql/data
       - ./db-dev-init/:/docker-entrypoint-initdb.d
+    shm_size: 128mb
     ports:
-      - 26257:26257
-      - 8080:8080
-    command:
-      - start-single-node
-      - --insecure
+      - 5432:5432
+    environment:
+      POSTGRES_USER: superuser
+      POSTGRES_PASSWORD: superuser
 
   db-migrate-and-seed:
     depends_on:
-      - roach1
+      - postgres
     build:
       context: .
       dockerfile: Dockerfile_migrate
@@ -21,17 +21,17 @@ services:
       - ".:/build"
     environment:
       - APP_NAME=migrate-and-seed
-      - PG_MIGRATION_DB=postgresql://donation_mgmt_migrator@roach1:26257/donationsdb?schema=donations
-      - DB_HOST=roach1
-      - DB_PORT=26257
-      - DB_USER=donation_mgmt_app
-      - DB_PASSWORD=
+      - PG_MIGRATION_DB=postgresql://donation_mgmt_migrator:MvGfJjzmxzLOYQjhF9i1fvq9dQemZmGvJdFVIbAsb37nopG4gR3GE4D4nOf3xWvX@postgres:5432/donationsdb?schema=donations
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=donation_mgmt_migrator
+      - DB_PASSWORD=MvGfJjzmxzLOYQjhF9i1fvq9dQemZmGvJdFVIbAsb37nopG4gR3GE4D4nOf3xWvX
       - DB_NAME=donationsdb
       - DB_SCHEMA=donations
 
   donation-mgmt:
     depends_on:
-      - roach1
+      - postgres
     build:
       context: .
       target: build
@@ -42,10 +42,10 @@ services:
       - "8000:8000"
       - "18000:18000"
     environment:
-      - DB_HOST=roach1
-      - DB_PORT=26257
+      - DB_HOST=postgres
+      - DB_PORT=5432
       - DB_USER=donation_mgmt_app
-      - DB_PASSWORD=
+      - DB_PASSWORD=yq2REWv0iD8nepOe1BFskFwPDgn69mFbjt2q3hzmB8THCLtteXKHMws1teMKLIu7
       - DB_NAME=donationsdb
       - DB_SCHEMA=donations
       - GCP_PROJECT_ID=donation-mgmt-stg
@@ -54,4 +54,4 @@ services:
     entrypoint: "/build/scripts/watch.sh"
 
 volumes:
-  ROACH1_DATA:
+  POSTGRES_DATA:
