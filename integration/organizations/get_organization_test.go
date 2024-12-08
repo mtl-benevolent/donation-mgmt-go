@@ -4,7 +4,7 @@ import (
 	"context"
 	"donation-mgmt/integration"
 	"donation-mgmt/integration/setup"
-	"donation-mgmt/src/data_access"
+	"donation-mgmt/src/dal"
 	"donation-mgmt/src/organizations"
 	"fmt"
 	"net/http"
@@ -25,7 +25,7 @@ func Test_Smoke_GetOrganizationBySlug_AsRoot(t *testing.T) {
 		WithOrganization(orgName, orgSlug).
 		Execute(context.Background(), t)
 
-	org, ok := setup.GetEntity[*data_access.Organization](values, orgName)
+	org, ok := setup.GetEntity[*dal.Organization](values, orgName)
 	require.True(t, ok, "Failed to get organization entity")
 
 	httpReq := setup.NewHttpReq(t, setup.HttpReqBuilder{

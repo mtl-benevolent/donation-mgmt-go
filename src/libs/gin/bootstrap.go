@@ -68,8 +68,6 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConf
 		panic("Unknown HTTP authentication method: " + appConfig.HTTPAuthenticationMethod)
 	}
 
-	router.Use(middlewares.UnitOfWork)
-
 	server := &http.Server{
 		Addr:    fmt.Sprintf("0.0.0.0:%d", appConfig.HTTPPort),
 		Handler: router,

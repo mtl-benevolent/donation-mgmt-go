@@ -1,14 +1,14 @@
 package donations
 
-import "donation-mgmt/src/data_access"
+import "donation-mgmt/src/dal"
 
 type DonationModel struct {
-	data_access.Donation
+	dal.Donation
 
 	DonorAddress DonorAddress
 
 	CommentsCount int64
-	Payments      []data_access.DonationPayment
+	Payments      []dal.DonationPayment
 }
 
 type DonorAddress struct {

@@ -3,7 +3,7 @@ package donations
 import (
 	"context"
 	"donation-mgmt/src/apperrors"
-	"donation-mgmt/src/data_access"
+	"donation-mgmt/src/dal"
 	"donation-mgmt/src/libs/db"
 	"donation-mgmt/src/system/logging"
 	"encoding/json"
@@ -21,11 +21,11 @@ var errRecurrentDonationNotFound = errors.New("recurrent donation not found")
 
 type CreateDonationParams struct {
 	OrganizationID int64
-	Environment    data_access.Enviroment
+	Environment    dal.Enviroment
 	ExternalID     *string
 	Reason         *string
-	Type           data_access.DonationType
-	Source         data_access.DonationSource
+	Type           dal.DonationType
+	Source         dal.DonationSource
 
 	DonorFirstName         *string
 	DonorLastnameOrOrgName *string
@@ -43,22 +43,14 @@ type CreateDonationParams struct {
 }
 
 func (p CreateDonationParams) IsRecurrent() bool {
-	return p.ExternalID != nil && p.Type == data_access.DonationTypeRECURRENT
+	return p.ExternalID != nil && p.Type == dal.DonationTypeRECURRENT
 }
 
 // AddPayment adds a payment to either an existing recurring donation or to a new donation. If no donation exists, a new one will be created.
 // A payment can be added to a given donation if the donation is recurrent and if the ExternalID match
 // an entry in the database. Otherwise, a new donation is created.
-func (s *DonationsService) AddPayment(ctx context.Context, params CreateDonationParams) (DonationModel, error) {
+func (s *DonationsService) AddPayment(ctx context.Context, querier dal.Querier, params CreateDonationParams) (DonationModel, error) {
 	l := logging.WithContextData(ctx, s.l)
-
-	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
-	defer finalizer()
-
-	querier, err := uow.GetQuerier(ctx)
-	if err != nil {
-		return DonationModel{}, err
-	}
 
 	if params.FiscalYear == nil {
 		l.Info("Fiscal year not provided, extracting from received at", "received_at", params.ReceivedAt, "timezone", tzName)
@@ -76,7 +68,7 @@ func (s *DonationsService) AddPayment(ctx context.Context, params CreateDonation
 		l = l.With("external_id", params.ExternalID, "source", params.Source)
 
 		l.Info("Donation payment is recurrent, trying to insert payment to existing donation")
-		donation, err := s.tryInsertPayment(ctx, querier, data_access.InsertPaymentToRecurrentDonationParams{
+		donation, err := s.tryInsertPayment(ctx, querier, dal.InsertPaymentToRecurrentDonationParams{
 			ExternalID:           params.ExternalID,
 			AmountInCents:        params.PaymentAmountInCents,
 			ReceiptAmountInCents: params.ReceiptAmountInCents,
@@ -116,8 +108,8 @@ func (s *DonationsService) AddPayment(ctx context.Context, params CreateDonation
 
 func (s *DonationsService) tryInsertPayment(
 	ctx context.Context,
-	querier data_access.Querier,
-	payment data_access.InsertPaymentToRecurrentDonationParams,
+	querier dal.Querier,
+	payment dal.InsertPaymentToRecurrentDonationParams,
 ) (DonationModel, error) {
 	inserted, err := querier.InsertPaymentToRecurrentDonation(ctx, payment)
 	if err != nil {
@@ -135,25 +127,25 @@ func (s *DonationsService) tryInsertPayment(
 		})
 	}
 
-	return s.GetDonationByID(ctx, GetDonationByIDParams{
+	return s.GetDonationByID(ctx, querier, GetDonationByIDParams{
 		OrganizationID: payment.OrganizationID,
 		Environment:    payment.Environment,
 		DonationID:     inserted.DonationID,
 	})
 }
 
-func mapParamsToInsertDonation(params CreateDonationParams) (data_access.InsertDonationParams, error) {
+func mapParamsToInsertDonation(params CreateDonationParams) (dal.InsertDonationParams, error) {
 	donorAddr, err := json.Marshal(params.DonorAddress)
 	if err != nil {
-		return data_access.InsertDonationParams{}, fmt.Errorf("failed to marshal donor address: %w", err)
+		return dal.InsertDonationParams{}, fmt.Errorf("failed to marshal donor address: %w", err)
 	}
 
 	slug := ulid.Make().String()
 	if params.FiscalYear == nil {
-		return data_access.InsertDonationParams{}, errors.New("fiscal year is required")
+		return dal.InsertDonationParams{}, errors.New("fiscal year is required")
 	}
 
-	donationToInsert := data_access.InsertDonationParams{
+	donationToInsert := dal.InsertDonationParams{
 		Slug:                   slug,
 		OrganizationID:         params.OrganizationID,
 		ExternalID:             params.ExternalID,
@@ -183,8 +175,8 @@ func extractFiscalYear(t time.Time, timezone string) (int16, error) {
 	return int16(fiscalYear), nil
 }
 
-func mapParamsToInsertPayment(params CreateDonationParams) data_access.InsertDonationPaymentParams {
-	return data_access.InsertDonationPaymentParams{
+func mapParamsToInsertPayment(params CreateDonationParams) dal.InsertDonationPaymentParams {
+	return dal.InsertDonationPaymentParams{
 		DonationID:    -1,
 		ExternalID:    params.PaymentExternalID,
 		Amount:        params.PaymentAmountInCents,
@@ -195,9 +187,9 @@ func mapParamsToInsertPayment(params CreateDonationParams) data_access.InsertDon
 
 func (s *DonationsService) insertDonation(
 	ctx context.Context,
-	querier data_access.Querier,
-	donation data_access.InsertDonationParams,
-	payment data_access.InsertDonationPaymentParams,
+	querier dal.Querier,
+	donation dal.InsertDonationParams,
+	payment dal.InsertDonationPaymentParams,
 ) (DonationModel, error) {
 	insertedDonation, err := querier.InsertDonation(ctx, donation)
 	if err != nil {
@@ -224,7 +216,7 @@ func (s *DonationsService) insertDonation(
 	return DonationModel{
 		Donation:     insertedDonation,
 		DonorAddress: donorAddr,
-		Payments: []data_access.DonationPayment{
+		Payments: []dal.DonationPayment{
 			insertedPayment,
 		},
 		CommentsCount: 0,

@@ -1,7 +1,7 @@
 package donations
 
 import (
-	"donation-mgmt/src/data_access"
+	"donation-mgmt/src/dal"
 	"time"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
@@ -9,18 +9,18 @@ import (
 )
 
 var validSources = []any{
-	data_access.DonationSourceCHEQUE,
-	data_access.DonationSourceDIRECTDEPOSIT,
-	data_access.DonationSourceOTHER,
-	data_access.DonationSourceSTOCKS,
+	dal.DonationSourceCHEQUE,
+	dal.DonationSourceDIRECTDEPOSIT,
+	dal.DonationSourceOTHER,
+	dal.DonationSourceSTOCKS,
 }
 
 type CreateDonationRequestV1 struct {
-	Reason               *string                    `json:"reason,omitempty"`
-	Source               data_access.DonationSource `json:"source"`
-	AmountInCents        int64                      `json:"amountInCents"`
-	ReceiptAmountInCents int64                      `json:"receiptAmountInCents"`
-	ReceivedAt           time.Time                  `json:"receivedAt"`
+	Reason               *string            `json:"reason,omitempty"`
+	Source               dal.DonationSource `json:"source"`
+	AmountInCents        int64              `json:"amountInCents"`
+	ReceiptAmountInCents int64              `json:"receiptAmountInCents"`
+	ReceivedAt           time.Time          `json:"receivedAt"`
 
 	Donor DonorDTO `json:"donor"`
 }

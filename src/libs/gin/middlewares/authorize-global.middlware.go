@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"donation-mgmt/src/apperrors"
+	"donation-mgmt/src/libs/db"
 	"donation-mgmt/src/permissions"
 	"donation-mgmt/src/system/contextual"
 
@@ -25,7 +26,17 @@ func WithGlobalAuthorization(entityType permissions.Entity, capabilities ...stri
 			MustBeGlobal: true,
 		}
 
-		canDo, err := permissions.GetPermissionsService().HasCapabilities(c, params)
+		uow := db.NewUnitOfWork()
+		defer uow.Finalize(c)
+
+		querier, err := uow.GetQuerier(c)
+		if err != nil {
+			c.Error(err)
+			c.Abort()
+			return
+		}
+
+		canDo, err := permissions.GetPermissionsService().HasCapabilities(c, querier, params)
 		if err != nil {
 			c.Error(err)
 			c.Abort()

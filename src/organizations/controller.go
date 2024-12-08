@@ -2,7 +2,7 @@ package organizations
 
 import (
 	"donation-mgmt/src/apperrors"
-	"donation-mgmt/src/data_access"
+	"donation-mgmt/src/dal"
 	"donation-mgmt/src/libs/db"
 	"donation-mgmt/src/libs/gin/middlewares"
 	"donation-mgmt/src/pagination"
@@ -23,6 +23,15 @@ func registerRoutes(router *gin.Engine) {
 }
 
 func ListOrganizationsV1(c *gin.Context) {
+	uow := db.NewUnitOfWork()
+	defer uow.Finalize(c)
+
+	querier, err := uow.GetQuerier(c)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
 	subject := contextual.GetSubject(c)
 	if subject == "" {
 		c.Error(&apperrors.AuthorizationError{
@@ -33,7 +42,7 @@ func ListOrganizationsV1(c *gin.Context) {
 
 	page := pagination.ParsePaginationOptions(c)
 
-	hasGlobalOrgRead, err := p.GetPermissionsService().HasCapabilities(c, p.HasRequiredPermissionsParams{
+	hasGlobalOrgRead, err := p.GetPermissionsService().HasCapabilities(c, querier, p.HasRequiredPermissionsParams{
 		Subject:      subject,
 		Capabilities: []string{p.Organization.Capability(p.Read)},
 		MustBeGlobal: true,
@@ -48,7 +57,7 @@ func ListOrganizationsV1(c *gin.Context) {
 		scopeQueryBySubject = ""
 	}
 
-	results, err := GetOrgService().GetOrganizations(c, ListOrganizationsParams{
+	results, err := GetOrgService().GetOrganizations(c, querier, ListOrganizationsParams{
 		Subject:     scopeQueryBySubject,
 		PageOptions: page,
 	})
@@ -73,8 +82,14 @@ func ListOrganizationsV1(c *gin.Context) {
 }
 
 func CreateOrganizationV1(c *gin.Context) {
-	uow := db.GetUnitOfWorkFromCtx(c)
-	uow.UseTransaction()
+	uow := db.NewUnitOfWork()
+	defer uow.Finalize(c)
+
+	querier, err := uow.GetQuerier(c)
+	if err != nil {
+		c.Error(err)
+		return
+	}
 
 	reqDTO := CreateOrganizationRequestV1{}
 	if err := c.ShouldBindJSON(&reqDTO); err != nil {
@@ -87,7 +102,7 @@ func CreateOrganizationV1(c *gin.Context) {
 		return
 	}
 
-	org, err := GetOrgService().CreateOrganization(c, data_access.InsertOrganizationParams{
+	org, err := GetOrgService().CreateOrganization(c, querier, dal.InsertOrganizationParams{
 		Name: reqDTO.Name,
 		Slug: reqDTO.Slug,
 	})
@@ -97,14 +112,28 @@ func CreateOrganizationV1(c *gin.Context) {
 		return
 	}
 
+	if err = uow.Commit(c); err != nil {
+		c.Error(err)
+		return
+	}
+
 	dto := mapOrgToDTO(org)
 	c.JSON(http.StatusCreated, dto)
 }
 
 func GetOrganizationBySlugV1(c *gin.Context) {
+	uow := db.NewUnitOfWork()
+	defer uow.Finalize(c)
+
+	querier, err := uow.GetQuerier(c)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
 	slug := c.Params.ByName("slug")
 
-	org, err := GetOrgService().GetOrganizationBySlug(c, slug)
+	org, err := GetOrgService().GetOrganizationBySlug(c, querier, slug)
 	if err != nil {
 		c.Error(err)
 		return
@@ -116,6 +145,15 @@ func GetOrganizationBySlugV1(c *gin.Context) {
 }
 
 func UpdateOrganizationV1(c *gin.Context) {
+	uow := db.NewUnitOfWorkWithTx()
+	defer uow.Finalize(c)
+
+	querier, err := uow.GetQuerier(c)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
 	slug := c.Params.ByName("slug")
 
 	reqDTO := UpdateOrganizationRequestV1{}
@@ -129,7 +167,7 @@ func UpdateOrganizationV1(c *gin.Context) {
 		return
 	}
 
-	org, err := GetOrgService().UpdateOrganization(c, data_access.UpdateOrganizationBySlugParams{
+	org, err := GetOrgService().UpdateOrganization(c, querier, dal.UpdateOrganizationBySlugParams{
 		Slug: slug,
 		Name: reqDTO.Name,
 	})
@@ -139,12 +177,17 @@ func UpdateOrganizationV1(c *gin.Context) {
 		return
 	}
 
+	if err = uow.Commit(c); err != nil {
+		c.Error(err)
+		return
+	}
+
 	dto := mapOrgToDTO(org)
 
 	c.JSON(http.StatusOK, dto)
 }
 
-func mapOrgToDTO(org data_access.Organization) OrganizationDTOV1 {
+func mapOrgToDTO(org dal.Organization) OrganizationDTOV1 {
 	return OrganizationDTOV1{
 		Name:      org.Name,
 		Slug:      org.Slug,

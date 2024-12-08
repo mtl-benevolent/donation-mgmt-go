@@ -47,6 +47,9 @@ services:
         - action: sync+restart
           path: ./prisma
           target: /build/prisma
+        - action: sync+restart
+          path: sqlc.yaml
+          target: /build/sqlc.yaml
         - action: rebuild
           path: go.mod
     ports:

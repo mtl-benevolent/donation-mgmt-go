@@ -3,12 +3,15 @@ package setup
 import (
 	"context"
 	"testing"
+
+	"donation-mgmt/src/dal"
+	"donation-mgmt/src/libs/db"
 )
 
 type Builder interface {
 	Name() string
 	Type() string
-	Execute(ctx context.Context) (any, error)
+	Execute(ctx context.Context, querier dal.Querier) (any, error)
 }
 
 type Setup struct {
@@ -30,8 +33,18 @@ func (s *Setup) Execute(ctx context.Context, t *testing.T) *SetupResult {
 		entities: make(map[string]any),
 	}
 
+	uow := db.NewUnitOfWork()
+	defer uow.Finalize(ctx)
+
+	querier, err := uow.GetQuerier(ctx)
+	if err != nil {
+		t.Errorf("Failed to initialize querier: %v", err)
+		t.FailNow()
+		return nil
+	}
+
 	for _, builder := range s.builders {
-		entity, err := builder.Execute(ctx)
+		entity, err := builder.Execute(ctx, querier)
 		if err != nil {
 			t.Errorf("Failed to execute setup. Unable to build %s (name: %s): %v", builder.Type(), builder.Name(), err)
 			t.FailNow()

@@ -5,7 +5,7 @@ sql:
     schema: "schema.gen.sql"
     gen:
       go:
-        package: data_access
+        package: dal
         out: src/data_access
         sql_package: "pgx/v5"
         emit_interface: true

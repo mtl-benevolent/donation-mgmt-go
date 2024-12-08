@@ -2,8 +2,7 @@ package permissions
 
 import (
 	"context"
-	"donation-mgmt/src/data_access"
-	"donation-mgmt/src/libs/db"
+	"donation-mgmt/src/dal"
 	"donation-mgmt/src/libs/logger"
 	"donation-mgmt/src/system/logging"
 	"errors"
@@ -34,34 +33,26 @@ type HasRequiredPermissionsParams struct {
 	Capabilities []string
 }
 
-func (s *PermissionsService) HasCapabilities(ctx context.Context, params HasRequiredPermissionsParams) (bool, error) {
+func (s *PermissionsService) HasCapabilities(ctx context.Context, querier dal.Querier, params HasRequiredPermissionsParams) (bool, error) {
 	if len(params.Capabilities) == 0 {
 		return true, nil
 	}
 
-	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
-	defer finalizer()
-
-	repo, err := uow.GetQuerier(ctx)
-	if err != nil {
-		return false, err
-	}
-
 	if params.MustBeGlobal {
-		return s.checkGlobal(ctx, repo, params)
+		return s.checkGlobal(ctx, querier, params)
 	} else if params.OrganizationSlug != "" {
-		return s.checkForOrgBySlug(ctx, repo, params)
+		return s.checkForOrgBySlug(ctx, querier, params)
 	} else if params.OrganizationID > 0 {
-		return s.checkForOrgByID(ctx, repo, params)
+		return s.checkForOrgByID(ctx, querier, params)
 	} else {
 		return false, ErrInvalidParams
 	}
 }
 
-func (s *PermissionsService) checkGlobal(ctx context.Context, querier data_access.Querier, params HasRequiredPermissionsParams) (bool, error) {
+func (s *PermissionsService) checkGlobal(ctx context.Context, querier dal.Querier, params HasRequiredPermissionsParams) (bool, error) {
 	logger := logging.WithContextData(ctx, s.l)
 
-	role, err := querier.HasGlobalCapabilities(ctx, data_access.HasGlobalCapabilitiesParams{
+	role, err := querier.HasGlobalCapabilities(ctx, dal.HasGlobalCapabilitiesParams{
 		Capabilities: params.Capabilities,
 		Subject:      params.Subject,
 	})
@@ -80,10 +71,10 @@ func (s *PermissionsService) checkGlobal(ctx context.Context, querier data_acces
 	return true, nil
 }
 
-func (s *PermissionsService) checkForOrgBySlug(ctx context.Context, querier data_access.Querier, params HasRequiredPermissionsParams) (bool, error) {
+func (s *PermissionsService) checkForOrgBySlug(ctx context.Context, querier dal.Querier, params HasRequiredPermissionsParams) (bool, error) {
 	logger := logging.WithContextData(ctx, s.l)
 
-	role, err := querier.HasCapabilitiesForOrgBySlug(ctx, data_access.HasCapabilitiesForOrgBySlugParams{
+	role, err := querier.HasCapabilitiesForOrgBySlug(ctx, dal.HasCapabilitiesForOrgBySlugParams{
 		Capabilities:     params.Capabilities,
 		Subject:          params.Subject,
 		OrganizationSlug: params.OrganizationSlug,
@@ -103,10 +94,10 @@ func (s *PermissionsService) checkForOrgBySlug(ctx context.Context, querier data
 	return true, nil
 }
 
-func (s *PermissionsService) checkForOrgByID(ctx context.Context, querier data_access.Querier, params HasRequiredPermissionsParams) (bool, error) {
+func (s *PermissionsService) checkForOrgByID(ctx context.Context, querier dal.Querier, params HasRequiredPermissionsParams) (bool, error) {
 	logger := logging.WithContextData(ctx, s.l)
 
-	role, err := querier.HasCapabilitiesForOrgByID(ctx, data_access.HasCapabilitiesForOrgByIDParams{
+	role, err := querier.HasCapabilitiesForOrgByID(ctx, dal.HasCapabilitiesForOrgByIDParams{
 		Capabilities:   params.Capabilities,
 		Subject:        params.Subject,
 		OrganizationID: params.OrganizationID,

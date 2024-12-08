@@ -2,7 +2,7 @@ package setup
 
 import (
 	"context"
-	"donation-mgmt/src/data_access"
+	"donation-mgmt/src/dal"
 	"donation-mgmt/src/organizations"
 	"errors"
 	"fmt"
@@ -29,7 +29,7 @@ func (b *OrganizationBuilder) Type() string {
 	return "organization"
 }
 
-func (b *OrganizationBuilder) Execute(ctx context.Context) (any, error) {
+func (b *OrganizationBuilder) Execute(ctx context.Context, querier dal.Querier) (any, error) {
 	if b.name == "" {
 		return nil, errors.New("name cannot be empty")
 	}
@@ -38,7 +38,7 @@ func (b *OrganizationBuilder) Execute(ctx context.Context) (any, error) {
 		b.slug = GenerateName()
 	}
 
-	org, err := organizations.GetOrgService().CreateOrganization(ctx, data_access.InsertOrganizationParams{
+	org, err := organizations.GetOrgService().CreateOrganization(ctx, querier, dal.InsertOrganizationParams{
 		Name: b.name,
 		Slug: b.slug,
 	})

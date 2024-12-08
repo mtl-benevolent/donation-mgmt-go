@@ -2,29 +2,22 @@ package donations
 
 import (
 	"context"
-	"donation-mgmt/src/apperrors"
-	"donation-mgmt/src/data_access"
-	"donation-mgmt/src/libs/db"
 	"encoding/json"
 	"fmt"
+
+	"donation-mgmt/src/apperrors"
+	"donation-mgmt/src/dal"
+	"donation-mgmt/src/libs/db"
 )
 
 type GetDonationByIDParams struct {
 	OrganizationID int64
-	Environment    data_access.Enviroment
+	Environment    dal.Enviroment
 	DonationID     int64
 }
 
-func (s *DonationsService) GetDonationByID(ctx context.Context, params GetDonationByIDParams) (DonationModel, error) {
-	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
-	defer finalizer()
-
-	querier, err := uow.GetQuerier(ctx)
-	if err != nil {
-		return DonationModel{}, err
-	}
-
-	donationRows, err := querier.GetDonationByID(ctx, data_access.GetDonationByIDParams{
+func (s *DonationsService) GetDonationByID(ctx context.Context, querier dal.Querier, params GetDonationByIDParams) (DonationModel, error) {
+	donationRows, err := querier.GetDonationByID(ctx, dal.GetDonationByIDParams{
 		ID:             params.DonationID,
 		OrganizationID: params.OrganizationID,
 		Environment:    params.Environment,
@@ -47,20 +40,12 @@ func (s *DonationsService) GetDonationByID(ctx context.Context, params GetDonati
 
 type GetDonationBySlugParams struct {
 	OrganizationID int64
-	Environment    data_access.Enviroment
+	Environment    dal.Enviroment
 	Slug           string
 }
 
-func (s *DonationsService) GetDonationBySlug(ctx context.Context, params GetDonationBySlugParams) (DonationModel, error) {
-	uow, finalizer := db.GetUnitOfWorkFromCtxOrDefault(ctx)
-	defer finalizer()
-
-	querier, err := uow.GetQuerier(ctx)
-	if err != nil {
-		return DonationModel{}, err
-	}
-
-	donationRows, err := querier.GetDonationBySlug(ctx, data_access.GetDonationBySlugParams{
+func (s *DonationsService) GetDonationBySlug(ctx context.Context, querier dal.Querier, params GetDonationBySlugParams) (DonationModel, error) {
+	donationRows, err := querier.GetDonationBySlug(ctx, dal.GetDonationBySlugParams{
 		Slug:           params.Slug,
 		OrganizationID: params.OrganizationID,
 		Environment:    params.Environment,
@@ -79,17 +64,17 @@ func (s *DonationsService) GetDonationBySlug(ctx context.Context, params GetDona
 	}
 
 	// Same struct, but we have to convert it to the correct struct array
-	rows := make([]data_access.GetDonationByIDRow, len(donationRows))
+	rows := make([]dal.GetDonationByIDRow, len(donationRows))
 	for i, row := range donationRows {
-		rows[i] = (data_access.GetDonationByIDRow)(row)
+		rows[i] = (dal.GetDonationByIDRow)(row)
 	}
 
 	return mapDonationRows(rows)
 }
 
-func mapDonationRows(donationRows []data_access.GetDonationByIDRow) (DonationModel, error) {
+func mapDonationRows(donationRows []dal.GetDonationByIDRow) (DonationModel, error) {
 	model := DonationModel{
-		Payments: make([]data_access.DonationPayment, len(donationRows)),
+		Payments: make([]dal.DonationPayment, len(donationRows)),
 	}
 
 	for i, row := range donationRows {
@@ -121,7 +106,7 @@ func mapDonationRows(donationRows []data_access.GetDonationByIDRow) (DonationMod
 			model.CommentsCount = row.CommentsCount
 		}
 
-		model.Payments[i] = data_access.DonationPayment{
+		model.Payments[i] = dal.DonationPayment{
 			ID:                   row.ID_2,
 			ExternalID:           row.ExternalID_2,
 			DonationID:           row.DonationID,

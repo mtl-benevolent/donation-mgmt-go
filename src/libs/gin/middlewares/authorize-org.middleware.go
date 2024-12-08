@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"donation-mgmt/src/apperrors"
+	"donation-mgmt/src/libs/db"
 	"donation-mgmt/src/permissions"
 	"donation-mgmt/src/system/contextual"
 	"errors"
@@ -38,7 +39,17 @@ func WithOrgAuthorization(orgSlugParam string, capabilities ...string) gin.Handl
 			OrganizationSlug: slug,
 		}
 
-		canDo, err := permissions.GetPermissionsService().HasCapabilities(c, params)
+		uow := db.NewUnitOfWork()
+		defer uow.Finalize(c)
+
+		querier, err := uow.GetQuerier(c)
+		if err != nil {
+			c.Error(err)
+			c.Abort()
+			return
+		}
+
+		canDo, err := permissions.GetPermissionsService().HasCapabilities(c, querier, params)
 		if err != nil {
 			c.Error(err)
 			c.Abort()
