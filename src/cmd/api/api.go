@@ -50,6 +50,9 @@ func main() {
 	readyCheck.StartPolling()
 	logger.Info("Application is ready")
 
-	gs.WaitForShutdown()
+	if err := gs.WaitForShutdown(); err != nil {
+		panic(err)
+	}
+
 	logger.Info("Application is shutting down")
 }

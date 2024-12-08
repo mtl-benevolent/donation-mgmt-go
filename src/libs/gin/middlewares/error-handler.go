@@ -20,7 +20,7 @@ func PanicHandler(c *gin.Context, panicReason any) {
 		err = fmt.Errorf("endpoint panicked: %v", panicReason)
 	}
 
-	c.Error(err)
+	_ = c.Error(err)
 }
 
 func ErrorHandler(c *gin.Context) {

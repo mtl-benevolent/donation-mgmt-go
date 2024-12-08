@@ -28,13 +28,13 @@ func ListOrganizationsV1(c *gin.Context) {
 
 	querier, err := uow.GetQuerier(c)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
 	subject := contextual.GetSubject(c)
 	if subject == "" {
-		c.Error(&apperrors.AuthorizationError{
+		_ = c.Error(&apperrors.AuthorizationError{
 			Message: "User is not authenticated",
 		})
 		return
@@ -48,7 +48,7 @@ func ListOrganizationsV1(c *gin.Context) {
 		MustBeGlobal: true,
 	})
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -62,7 +62,7 @@ func ListOrganizationsV1(c *gin.Context) {
 		PageOptions: page,
 	})
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -87,18 +87,18 @@ func CreateOrganizationV1(c *gin.Context) {
 
 	querier, err := uow.GetQuerier(c)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
 	reqDTO := CreateOrganizationRequestV1{}
 	if err := c.ShouldBindJSON(&reqDTO); err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
 	if err := reqDTO.Validate(); err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -108,12 +108,12 @@ func CreateOrganizationV1(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
 	if err = uow.Commit(c); err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -127,7 +127,7 @@ func GetOrganizationBySlugV1(c *gin.Context) {
 
 	querier, err := uow.GetQuerier(c)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -135,7 +135,7 @@ func GetOrganizationBySlugV1(c *gin.Context) {
 
 	org, err := GetOrgService().GetOrganizationBySlug(c, querier, slug)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -150,7 +150,7 @@ func UpdateOrganizationV1(c *gin.Context) {
 
 	querier, err := uow.GetQuerier(c)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -158,12 +158,12 @@ func UpdateOrganizationV1(c *gin.Context) {
 
 	reqDTO := UpdateOrganizationRequestV1{}
 	if err := c.ShouldBindJSON(&reqDTO); err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
 	if err := reqDTO.Validate(); err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -173,12 +173,12 @@ func UpdateOrganizationV1(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
 	if err = uow.Commit(c); err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 

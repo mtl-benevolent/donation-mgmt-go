@@ -65,11 +65,15 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConf
 		return err == nil
 	}, pollInterval)
 
-	gs.RegisterComponentWithFn(componentName, func() error {
+	err = gs.RegisterComponentWithFn(componentName, func() error {
 		l.Info("Closing the database connection pool")
 		pool.Close()
 		return nil
 	})
+	if err != nil {
+		l.Error("Unable to register the database pool with the graceful shutdown", slog.Any("error", err))
+		panic("error bootstrapping the database")
+	}
 }
 
 func BootstrapSingleConnection(appConfig *config.AppConfiguration) (*pgx.Conn, error) {

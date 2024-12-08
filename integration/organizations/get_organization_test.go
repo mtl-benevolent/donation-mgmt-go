@@ -30,7 +30,7 @@ func Test_Smoke_GetOrganizationBySlug_AsRoot(t *testing.T) {
 
 	httpReq := setup.NewHttpReq(t, setup.HttpReqBuilder{
 		Method: http.MethodGet,
-		Url:    fmt.Sprintf("/v1/organizations/" + org.Slug),
+		Url:    fmt.Sprintf("/v1/organizations/%s", org.Slug),
 		User:   "root",
 	})
 

@@ -34,12 +34,12 @@ func (c *ControllerV1) RegisterRoutes(router gin.IRouter) {
 func (c *ControllerV1) CreateDonationV1(ctx *gin.Context) {
 	request, err := ginutils.DeserializeJSON[CreateDonationRequestV1](ctx)
 	if err != nil {
-		ctx.Error(err)
+		_ = ctx.Error(err)
 		return
 	}
 
 	if err := request.Validate(); err != nil {
-		ctx.Error(err)
+		_ = ctx.Error(err)
 		return
 	}
 

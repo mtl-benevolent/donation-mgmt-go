@@ -23,7 +23,7 @@ func FirebaseAuthMiddleware() gin.HandlerFunc {
 				Message: "No Authorization header provided",
 			}
 
-			c.Error(err)
+			_ = c.Error(err)
 			c.Abort()
 			return
 		}
@@ -34,7 +34,7 @@ func FirebaseAuthMiddleware() gin.HandlerFunc {
 				Message: "Invalid Authorization header provided. Make sure you are sending a valid Bearer token",
 			}
 
-			c.Error(err)
+			_ = c.Error(err)
 			c.Abort()
 			return
 		}
@@ -47,7 +47,7 @@ func FirebaseAuthMiddleware() gin.HandlerFunc {
 				InnerError: err,
 			}
 
-			c.Error(appErr)
+			_ = c.Error(appErr)
 			c.Abort()
 			return
 		}

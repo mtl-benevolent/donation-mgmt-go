@@ -25,7 +25,9 @@ var adjectives = []string{
 }
 
 func GenerateName() string {
+	// #nosec G404
 	adjective := adjectives[rand.Intn(len(adjectives))]
+	// #nosec G404
 	name := names[rand.Intn(len(names))]
 	id := ulid.Make().String()
 

@@ -69,8 +69,10 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConf
 	}
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf("0.0.0.0:%d", appConfig.HTTPPort),
-		Handler: router,
+		Addr:              fmt.Sprintf("0.0.0.0:%d", appConfig.HTTPPort),
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       7 * time.Second,
 	}
 
 	go func() {
@@ -84,13 +86,17 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConf
 		}
 	}()
 
-	gs.RegisterComponentWithFn("WebServer", func() error {
+	err := gs.RegisterComponentWithFn("WebServer", func() error {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err := server.Shutdown(shutdownCtx)
 		return err
 	})
+	if err != nil {
+		l.Error("Unable to register the web server with the graceful shutdown", slog.Any("error", err))
+		panic("error bootstrapping the web server")
+	}
 
 	return router
 }

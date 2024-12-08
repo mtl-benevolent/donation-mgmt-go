@@ -19,7 +19,7 @@ func WithOrgAuthorization(orgSlugParam string, capabilities ...string) gin.Handl
 	return func(c *gin.Context) {
 		subject := contextual.GetSubject(c)
 		if subject == "" {
-			c.Error(&apperrors.AuthorizationError{
+			_ = c.Error(&apperrors.AuthorizationError{
 				Message: "User is not authenticated",
 			})
 			c.Abort()
@@ -28,7 +28,7 @@ func WithOrgAuthorization(orgSlugParam string, capabilities ...string) gin.Handl
 
 		slug, hasOrgSlug := c.Params.Get(orgSlugParam)
 		if !hasOrgSlug {
-			c.Error(ErrMissingOrgSlug)
+			_ = c.Error(ErrMissingOrgSlug)
 			c.Abort()
 			return
 		}
@@ -39,25 +39,26 @@ func WithOrgAuthorization(orgSlugParam string, capabilities ...string) gin.Handl
 			OrganizationSlug: slug,
 		}
 
+		// TODO: Consider making this Unit of Work global and sharing it across all requests
 		uow := db.NewUnitOfWork()
 		defer uow.Finalize(c)
 
 		querier, err := uow.GetQuerier(c)
 		if err != nil {
-			c.Error(err)
+			_ = c.Error(err)
 			c.Abort()
 			return
 		}
 
 		canDo, err := permissions.GetPermissionsService().HasCapabilities(c, querier, params)
 		if err != nil {
-			c.Error(err)
+			_ = c.Error(err)
 			c.Abort()
 			return
 		}
 
 		if !canDo {
-			c.Error(&apperrors.OperationForbiddenError{
+			_ = c.Error(&apperrors.OperationForbiddenError{
 				EntityID: apperrors.EntityIdentifier{
 					EntityType: permissions.Organization.String(),
 					IDField:    "id",

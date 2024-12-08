@@ -13,7 +13,7 @@ func WithGlobalAuthorization(entityType permissions.Entity, capabilities ...stri
 	return func(c *gin.Context) {
 		subject := contextual.GetSubject(c)
 		if subject == "" {
-			c.Error(&apperrors.AuthorizationError{
+			_ = c.Error(&apperrors.AuthorizationError{
 				Message: "User is not authenticated",
 			})
 			c.Abort()
@@ -26,25 +26,26 @@ func WithGlobalAuthorization(entityType permissions.Entity, capabilities ...stri
 			MustBeGlobal: true,
 		}
 
+		// TODO: Consider making this Unit of Work global and sharing it across all requests
 		uow := db.NewUnitOfWork()
 		defer uow.Finalize(c)
 
 		querier, err := uow.GetQuerier(c)
 		if err != nil {
-			c.Error(err)
+			_ = c.Error(err)
 			c.Abort()
 			return
 		}
 
 		canDo, err := permissions.GetPermissionsService().HasCapabilities(c, querier, params)
 		if err != nil {
-			c.Error(err)
+			_ = c.Error(err)
 			c.Abort()
 			return
 		}
 
 		if !canDo {
-			c.Error(&apperrors.OperationForbiddenError{
+			_ = c.Error(&apperrors.OperationForbiddenError{
 				EntityID: apperrors.EntityIdentifier{
 					EntityType: string(entityType),
 					Extras: map[string]any{

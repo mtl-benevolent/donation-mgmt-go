@@ -35,6 +35,7 @@ func NewHttpReq(t *testing.T, params HttpReqBuilder) *http.Request {
 		params.Timeout = DefaultRequestTimeout
 	}
 
+	//nolint:contextcheck,govet
 	ctx, _ := context.WithTimeout(context.Background(), params.Timeout)
 
 	var bodyReader io.Reader
