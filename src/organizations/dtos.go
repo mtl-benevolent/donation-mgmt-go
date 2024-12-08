@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	ozzo "github.com/go-ozzo/ozzo-validation"
+	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 type OrganizationDTOV1 struct {

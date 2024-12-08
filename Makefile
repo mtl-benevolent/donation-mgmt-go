@@ -21,9 +21,6 @@ schema.gen.sql: ./prisma/schema.prisma
 
 .PHONY: sqlc
 sqlc: schema.gen.sql
-	@echo "[INFO] Installing sqlc"
-	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.26.0
-
 	@echo "Generating Data Access Layer using sqlc"
 	@$$(go env GOPATH)/bin/sqlc generate
 
@@ -36,9 +33,6 @@ clean:
 
 .PHONY: lint
 lint:
-	@echo "Installing linter"
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.54.2
-	
 	@echo "Linting code"
 	@$$(go env GOPATH)/bin/golangci-lint run ./...
 
@@ -46,3 +40,12 @@ lint:
 seed:
 	@echo "Seeding the database"
 	@go run ./src/cmd/seed/seed.go
+
+.PHONY: deps
+deps:
+	@echo "[INFO] Installing linter"
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2
+
+	@echo "[INFO] Installing sqlc"
+	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.27.0
+

@@ -35,16 +35,20 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: build
     develop:
       watch:
-        - action: rebuild
+        - action: sync+restart
           path: ./src
-        - action: restart
+          target: /build/src
+        - action: sync+restart
           path: ./sqlc
-        - action: restart
+          target: /build/sqlc
+        - action: sync+restart
           path: ./prisma
-    volumes:
-      - ".:/build"
+          target: /build/prisma
+        - action: rebuild
+          path: go.mod
     ports:
       - "8000:8000"
       - "18000:18000"

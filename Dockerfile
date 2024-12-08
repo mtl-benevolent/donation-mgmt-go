@@ -1,4 +1,4 @@
-FROM golang:1.23.3-bookworm AS deps
+FROM golang:1.23.4-bookworm AS deps
 
 ENV NODE_MAJOR=20
 
@@ -10,15 +10,18 @@ RUN apt-get update && \
   echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
   apt-get update -y && \
   apt-get install nodejs -y && \
-  go install github.com/go-delve/delve/cmd/dlv@v1.22.0
-
+  go install github.com/go-delve/delve/cmd/dlv@v1.23.1
+  
 WORKDIR /build
+RUN git init --quiet
 
-COPY go.mod go.sum package*.json ./
+COPY go.mod go.sum package*.json Makefile ./
 
-RUN git init --quiet && \
-  go mod download && \
-  npm ci
+RUN go mod download && \
+  npm ci & \
+  make deps; \
+  \
+  wait
 
 FROM deps AS build
 
@@ -29,7 +32,10 @@ COPY ./ ./
 
 RUN make build
 
-FROM gcr.io/distroless/static-debian12:nonroot
+# This CMD is used for local development
+CMD [ "sh", "-c", "make build && /go/bin/dlv exec ./dist/api --headless --api-version 2 --continue --accept-multiclient --listen \"0.0.0.0:18000\"" ]
+
+FROM gcr.io/distroless/base-debian12:nonroot
 
 WORKDIR /app
 
@@ -37,4 +43,4 @@ COPY --from=build /build/dist/api ./api
 
 EXPOSE 8000
 
-ENTRYPOINT [ "/app/api" ]
+CMD [ "/app/api" ]

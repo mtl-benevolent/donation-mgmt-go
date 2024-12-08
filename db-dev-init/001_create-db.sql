@@ -16,6 +16,7 @@ GRANT donations_ro TO donations_rw;
 -- Setting up donations_maintenance role
 GRANT donations_rw TO donations_maintenance;
 GRANT CREATE ON DATABASE donationsdb TO donations_maintenance;
+GRANT donations_rw TO donations_maintenance;
 
 -- Creating application user
 CREATE USER donation_mgmt_app WITH LOGIN PASSWORD 'yq2REWv0iD8nepOe1BFskFwPDgn69mFbjt2q3hzmB8THCLtteXKHMws1teMKLIu7';

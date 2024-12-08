@@ -1,4 +1,5 @@
 .git/
+.vscode/
 .gitignore
 *.md
 LICENSE
@@ -7,3 +8,4 @@ docker-compose.yml
 tmp/
 bin/
 credentials/
+dist/

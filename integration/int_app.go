@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/gretro/go-lifecycle"
+	lifecycle "github.com/gretro/go-lifecycle"
 
 	"donation-mgmt/src/config"
 	"donation-mgmt/src/libs/db"

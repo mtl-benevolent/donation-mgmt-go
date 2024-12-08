@@ -37,7 +37,7 @@ type AppConfiguration struct {
 	DBHost     string `env:"DB_HOST,default=localhost"`
 	DBPort     uint16 `env:"DB_PORT,default=26257"`
 	DBUser     string `env:"DB_USER,default=donation_mgmt_app"`
-	DBPassword string `env:"DB_PASSWORD"`
+	DBPassword string `env:"DB_PASSWORD,required=true"`
 	DBName     string `env:"DB_NAME,default=donationsdb"`
 	DBSchema   string `env:"DB_SCHEMA,default=donations"`
 

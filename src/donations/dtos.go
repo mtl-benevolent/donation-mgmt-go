@@ -4,8 +4,8 @@ import (
 	"donation-mgmt/src/data_access"
 	"time"
 
-	ozzo "github.com/go-ozzo/ozzo-validation"
-	"github.com/go-ozzo/ozzo-validation/is"
+	ozzo "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
 var validSources = []any{
