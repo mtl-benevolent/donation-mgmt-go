@@ -34,8 +34,15 @@ services:
       - roach1
     build:
       context: .
-      target: build
       dockerfile: Dockerfile
+    develop:
+      watch:
+        - action: rebuild
+          path: ./src
+        - action: restart
+          path: ./sqlc
+        - action: restart
+          path: ./prisma
     volumes:
       - ".:/build"
     ports:
@@ -51,7 +58,6 @@ services:
       - GCP_PROJECT_ID=donation-mgmt-stg
       - HTTP_AUTH=devheader
       - GCP_SA_JSON_PATH=/build/credentials/gcp-sa.json
-    entrypoint: "/build/scripts/watch.sh"
 
 volumes:
   ROACH1_DATA:

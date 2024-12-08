@@ -10,7 +10,6 @@ RUN apt-get update && \
   echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
   apt-get update -y && \
   apt-get install nodejs -y && \
-  go install github.com/cosmtrek/air@v1.27.8 && \
   go install github.com/go-delve/delve/cmd/dlv@v1.22.0
 
 WORKDIR /build
