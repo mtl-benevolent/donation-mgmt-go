@@ -15,6 +15,7 @@ model Organization {
   id BigInt @id @default(autoincrement())
   name String
   slug String @unique
+  timezone String
 
   created_at DateTime @db.Timestamptz() @default(now())
   archived_at DateTime? @db.Timestamptz()

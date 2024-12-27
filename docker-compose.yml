@@ -10,6 +10,8 @@ services:
     environment:
       POSTGRES_USER: superuser
       POSTGRES_PASSWORD: superuser
+    networks:
+      - donation-mgmt
 
   db-migrate-and-seed:
     depends_on:
@@ -28,6 +30,8 @@ services:
       - DB_PASSWORD=MvGfJjzmxzLOYQjhF9i1fvq9dQemZmGvJdFVIbAsb37nopG4gR3GE4D4nOf3xWvX
       - DB_NAME=donationsdb
       - DB_SCHEMA=donations
+    networks:
+      - donation-mgmt
 
   donation-mgmt:
     depends_on:
@@ -62,9 +66,37 @@ services:
       - DB_PASSWORD=yq2REWv0iD8nepOe1BFskFwPDgn69mFbjt2q3hzmB8THCLtteXKHMws1teMKLIu7
       - DB_NAME=donationsdb
       - DB_SCHEMA=donations
-      - GCP_PROJECT_ID=donation-mgmt-stg
+      - GOOGLE_PROJECT_ID=donation-mgmt-stg
       - HTTP_AUTH=devheader
       - GCP_SA_JSON_PATH=/build/credentials/gcp-sa.json
+    networks:
+      - donation-mgmt
+
+  storage:
+    image: fsouza/fake-gcs-server:1.50.2
+    volumes:
+      - GCS_STORAGE:/storage:rw
+    ports:
+      - 8888:8888
+    command:
+      - "-backend"
+      - "filesystem"
+      - "-port"
+      - "8888"
+      - "-external-url"
+      - "storage.donation-mgmt.localhost:8888"
+      - "-public-host"
+      - "storage.donation-mgmt.localhost:8888"
+      - "scheme"
+      - "http"
+    networks:
+      donation-mgmt:
+        aliases:  # Necessary for Signed URLs to work properly
+          - storage.donation-mgmt.localhost:8888
 
 volumes:
   POSTGRES_DATA:
+  GCS_STORAGE:
+
+networks:
+  donation-mgmt:

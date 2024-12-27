@@ -7,15 +7,15 @@ CREATE ROLE donations_rw;
 CREATE ROLE donations_maintenance;
 
 -- Setting up donations_ro role
-GRANT CONNECT ON DATABASE donationsdb TO donations_ro;
-GRANT USAGE ON SCHEMA donations TO donations_ro;
+GRANT CONNECT ON DATABASE donationsdb TO GROUP donations_ro;
+GRANT USAGE ON SCHEMA donations TO GROUP donations_ro;
 
 -- Setting up donations_rw role
 GRANT donations_ro TO donations_rw;
 
 -- Setting up donations_maintenance role
 GRANT donations_rw TO donations_maintenance;
-GRANT CREATE ON DATABASE donationsdb TO donations_maintenance;
+GRANT CREATE ON DATABASE donationsdb TO GROUP donations_maintenance;
 GRANT donations_rw TO donations_maintenance;
 
 -- Creating application user

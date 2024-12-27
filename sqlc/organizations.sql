@@ -34,13 +34,13 @@ WHERE slug = LOWER(sqlc.arg('Slug'))
 	AND archived_at IS NULL;
 
 -- name: InsertOrganization :one
-INSERT INTO organizations(name, slug)
-VALUES(sqlc.arg('Name'), LOWER(sqlc.arg('Slug')))
+INSERT INTO organizations(name, slug, timezone)
+VALUES(sqlc.arg('Name'), LOWER(sqlc.arg('Slug')), sqlc.arg('TimeZone'))
 RETURNING *;
 
 -- name: UpdateOrganizationBySlug :one
 UPDATE organizations
-SET name = sqlc.arg('Name')
+SET name = sqlc.arg('Name'), timezone = sqlc.arg('TimeZone')
 WHERE slug = LOWER(sqlc.arg('Slug'))
 RETURNING *;
 

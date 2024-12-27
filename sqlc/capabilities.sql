@@ -13,7 +13,7 @@ from "roles" r
 left outer join sur on r.id = sur.role_id
 left outer join global_user_roles gur on r.id = gur.role_id and gur.subject = sqlc.arg('Subject')
 where r.archived_at is null
-	and r.capabilities @> sqlc.arg('Capabilities')::varchar[]
+	and r.capabilities @> sqlc.arg('Capabilities')::text[]
 	and (sur.id is not null or gur.id is not null)
 limit 1;
 
@@ -31,7 +31,7 @@ from "roles" r
 left outer join sur on r.id = sur.role_id
 left outer join global_user_roles gur on r.id = gur.role_id and gur.subject = sqlc.arg('Subject')
 where r.archived_at is null
-	and r.capabilities @> sqlc.arg('Capabilities')::varchar[]
+	and r.capabilities @> sqlc.arg('Capabilities')::text[]
 	and (sur.id is not null or gur.id is not null)
 limit 1;
 
@@ -40,7 +40,7 @@ select r.id, r.name, r.created_at
 from "roles" r
 inner join global_user_roles gur on r.id = gur.role_id and gur.subject = sqlc.arg('Subject')
 where r.archived_at is null
-	and r.capabilities @> sqlc.arg('Capabilities')::varchar[]
+	and r.capabilities @> sqlc.arg('Capabilities')::text[]
 limit 1;
 
 -- name: GetScopedRoles :many

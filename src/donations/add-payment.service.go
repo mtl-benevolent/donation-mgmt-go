@@ -53,7 +53,7 @@ func (s *DonationsService) AddPayment(ctx context.Context, querier dal.Querier, 
 	l := logging.WithContextData(ctx, s.l)
 
 	if params.FiscalYear == nil {
-		l.Info("Fiscal year not provided, extracting from received at", "received_at", params.ReceivedAt, "timezone", tzName)
+		l.Debug("Fiscal year not provided, extracting from received at", "received_at", params.ReceivedAt, "timezone", tzName)
 
 		// TODO: Extract timezone from organization config
 		fiscalYear, err := extractFiscalYear(params.ReceivedAt, tzName)

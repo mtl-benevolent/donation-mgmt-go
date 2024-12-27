@@ -103,8 +103,9 @@ func CreateOrganizationV1(c *gin.Context) {
 	}
 
 	org, err := GetOrgService().CreateOrganization(c, querier, dal.InsertOrganizationParams{
-		Name: reqDTO.Name,
-		Slug: reqDTO.Slug,
+		Name:     reqDTO.Name,
+		Slug:     reqDTO.Slug,
+		TimeZone: reqDTO.TimeZone,
 	})
 
 	if err != nil {
@@ -168,8 +169,9 @@ func UpdateOrganizationV1(c *gin.Context) {
 	}
 
 	org, err := GetOrgService().UpdateOrganization(c, querier, dal.UpdateOrganizationBySlugParams{
-		Slug: slug,
-		Name: reqDTO.Name,
+		Slug:     slug,
+		Name:     reqDTO.Name,
+		TimeZone: reqDTO.Timezone,
 	})
 
 	if err != nil {
@@ -191,6 +193,7 @@ func mapOrgToDTO(org dal.Organization) OrganizationDTOV1 {
 	return OrganizationDTOV1{
 		Name:      org.Name,
 		Slug:      org.Slug,
+		TimeZone:  org.Timezone,
 		CreatedAt: org.CreatedAt,
 	}
 }
