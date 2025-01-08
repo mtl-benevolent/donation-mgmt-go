@@ -157,3 +157,38 @@ model DonationComment {
 
   @@map("donation_comments")
 }
+
+model Task {
+  id BigInt @id @default(autoincrement())
+
+  body Json?
+
+  type TaskType
+  status TaskStatus @default(CREATED)
+  comment String?
+
+  created_at DateTime @db.Timestamptz() @default(now())
+  completed_at DateTime? @db.Timestamptz()
+  
+  last_picked_up_at DateTime?
+  locked_until DateTime? @db.Timestamptz()
+  locked_by String
+
+  max_retries Int
+  retry_count Int @default(0)
+
+  @@map("task_queue")
+  @@index([locked_until])
+}
+
+enum TaskType {
+  GENERATE_RECEIPT
+}
+
+enum TaskStatus {
+  CREATED
+  IN_PROGRESS
+  COMPLETED
+  ERROR_RETRYABLE
+  ERROR_UNRETRYABLE
+}

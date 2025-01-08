@@ -1,4 +1,3 @@
-
 -- name: GetDonationByID :many
 WITH comments_count AS (
 	SELECT count(*) AS "comments_count", dc.donation_id FROM donation_comments dc 

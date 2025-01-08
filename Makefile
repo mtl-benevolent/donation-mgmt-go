@@ -49,3 +49,7 @@ deps:
 	@echo "[INFO] Installing sqlc"
 	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.27.0
 
+.PHONY: migrate
+migrate:
+	@echo "[INFO] Applying pending migrations (in dev mode)"
+	@npx prisma migrate dev
