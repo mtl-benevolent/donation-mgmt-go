@@ -201,6 +201,8 @@ func (s *DonationsService) insertDonation(
 		})
 	}
 
+	payment.DonationID = insertedDonation.ID
+
 	insertedPayment, err := querier.InsertDonationPayment(ctx, payment)
 	if err != nil {
 		return DonationModel{}, db.MapDBError(err, apperrors.EntityIdentifier{

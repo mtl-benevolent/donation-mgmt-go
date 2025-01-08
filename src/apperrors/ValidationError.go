@@ -13,6 +13,13 @@ type ValidationError struct {
 	InnerError error
 }
 
+func NewInvalidParamError(paramName string) *ValidationError {
+	return &ValidationError{
+		EntityName: paramName,
+		InnerError: fmt.Errorf("invalid URL parameter"),
+	}
+}
+
 func (e *ValidationError) Error() string {
 	if e.InnerError != nil {
 		return fmt.Sprintf("Error validating %s entity: %v", e.EntityName, e.InnerError)

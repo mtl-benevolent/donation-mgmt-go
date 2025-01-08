@@ -4,10 +4,12 @@ import (
 	"donation-mgmt/src/apperrors"
 	"donation-mgmt/src/dal"
 	"donation-mgmt/src/libs/db"
+	"donation-mgmt/src/libs/gin/ginext"
 	"donation-mgmt/src/libs/gin/middlewares"
 	"donation-mgmt/src/pagination"
 	p "donation-mgmt/src/permissions"
 	"donation-mgmt/src/system/contextual"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -18,8 +20,8 @@ func registerRoutes(router *gin.Engine) {
 
 	orgRouter.GET("", ListOrganizationsV1) // Permissions are handled as part of the query
 	orgRouter.POST("", middlewares.WithGlobalAuthorization(p.Organization, p.Organization.Capability(p.Create)), CreateOrganizationV1)
-	orgRouter.GET("/:slug", middlewares.WithOrgAuthorization("slug", p.Organization.Capability(p.Read)), GetOrganizationBySlugV1)
-	orgRouter.PUT("/:slug", middlewares.WithOrgAuthorization("slug", p.Organization.Capability(p.Update)), UpdateOrganizationV1)
+	orgRouter.GET(fmt.Sprintf("/:%s", ginext.OrgSlugParamName), middlewares.WithOrgAuthorization(ginext.OrgSlugParamName, p.Organization.Capability(p.Read)), GetOrganizationBySlugV1)
+	orgRouter.PUT(fmt.Sprintf("/:%s", ginext.OrgSlugParamName), middlewares.WithOrgAuthorization(ginext.OrgSlugParamName, p.Organization.Capability(p.Update)), UpdateOrganizationV1)
 }
 
 func ListOrganizationsV1(c *gin.Context) {

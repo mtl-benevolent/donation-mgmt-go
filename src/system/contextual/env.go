@@ -1,6 +1,12 @@
 package contextual
 
-import "context"
+import (
+	"context"
+	"donation-mgmt/src/apperrors"
+	"donation-mgmt/src/dal"
+	"fmt"
+	"strings"
+)
 
 const EnvCtxKey = "env"
 
@@ -15,4 +21,20 @@ func GetEnv(ctx context.Context) string {
 	}
 
 	return env
+}
+
+func GetValidEnv(ctx context.Context) (dal.Enviroment, error) {
+	env := GetEnv(ctx)
+
+	switch strings.ToUpper(env) {
+	case string(dal.EnviromentSANDBOX):
+		return dal.EnviromentSANDBOX, nil
+	case string(dal.EnviromentLIVE):
+		return dal.EnviromentLIVE, nil
+	default:
+		return "", &apperrors.ValidationError{
+			EntityName: "Environment",
+			InnerError: fmt.Errorf("invalid environment value in path"),
+		}
+	}
 }
