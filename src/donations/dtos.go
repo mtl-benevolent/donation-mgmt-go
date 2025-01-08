@@ -1,7 +1,9 @@
 package donations
 
 import (
+	"donation-mgmt/src/apperrors"
 	"donation-mgmt/src/dal"
+	"reflect"
 	"time"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
@@ -16,25 +18,34 @@ var validSources = []any{
 }
 
 type CreateDonationRequestV1 struct {
-	Reason               *string            `json:"reason,omitempty"`
-	Source               dal.DonationSource `json:"source"`
-	AmountInCents        int64              `json:"amountInCents"`
-	ReceiptAmountInCents int64              `json:"receiptAmountInCents"`
-	ReceivedAt           time.Time          `json:"receivedAt"`
+	Reason               *string             `json:"reason,omitempty"`
+	Source               *dal.DonationSource `json:"source"`
+	AmountInCents        int64               `json:"amountInCents"`
+	ReceiptAmountInCents int64               `json:"receiptAmountInCents"`
+	ReceivedAt           time.Time           `json:"receivedAt"`
 
 	Donor DonorDTO `json:"donor"`
 }
 
 func (r CreateDonationRequestV1) Validate() error {
-	return ozzo.ValidateStruct(
+	err := ozzo.ValidateStruct(
 		&r,
 		ozzo.Field(&r.Reason, ozzo.Length(0, 255)),
-		ozzo.Field(&r.Source, ozzo.In(validSources...)),
+		ozzo.Field(&r.Source, ozzo.Required, ozzo.In(validSources...)),
 		ozzo.Field(&r.AmountInCents, ozzo.Required, ozzo.Min(1)),
 		ozzo.Field(&r.ReceiptAmountInCents, ozzo.Required, ozzo.Min(1)),
 		ozzo.Field(&r.ReceivedAt, ozzo.Required),
 		ozzo.Field(&r.Donor, ozzo.NotNil),
 	)
+
+	if err != nil {
+		return &apperrors.ValidationError{
+			EntityName: reflect.TypeOf(r).Name(),
+			InnerError: err,
+		}
+	}
+
+	return nil
 }
 
 type DonorDTO struct {
@@ -44,8 +55,8 @@ type DonorDTO struct {
 	Email     *string          `json:"email,omitempty"`
 	Address   *DonorAddressDTO `json:"address,omitempty"`
 
-	EmitReceipt bool `json:"emitReceipt"`
-	SendByEmail bool `json:"sendByEmail"`
+	EmitReceipt        bool `json:"emitReceipt"`
+	SendReceiptByEmail bool `json:"sendReceiptByEmail"`
 }
 
 func (d DonorDTO) Validate() error {

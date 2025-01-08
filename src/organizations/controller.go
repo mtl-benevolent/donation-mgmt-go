@@ -82,7 +82,7 @@ func ListOrganizationsV1(c *gin.Context) {
 }
 
 func CreateOrganizationV1(c *gin.Context) {
-	uow := db.NewUnitOfWork()
+	uow := db.NewUnitOfWorkWithTx()
 	defer uow.Finalize(c)
 
 	querier, err := uow.GetQuerier(c)
@@ -191,6 +191,7 @@ func UpdateOrganizationV1(c *gin.Context) {
 
 func mapOrgToDTO(org dal.Organization) OrganizationDTOV1 {
 	return OrganizationDTOV1{
+		ID:        org.ID,
 		Name:      org.Name,
 		Slug:      org.Slug,
 		TimeZone:  org.Timezone,

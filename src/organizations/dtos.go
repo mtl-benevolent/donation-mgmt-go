@@ -12,6 +12,7 @@ import (
 )
 
 type OrganizationDTOV1 struct {
+	ID        int64     `json:"id"`
 	Name      string    `json:"name"`
 	Slug      string    `json:"slug"`
 	TimeZone  string    `json:"timezone"`
@@ -25,7 +26,6 @@ type CreateOrganizationRequestV1 struct {
 }
 
 func (dto CreateOrganizationRequestV1) Validate() error {
-
 	err := ozzo.ValidateStruct(
 		&dto,
 		ozzo.Field(&dto.Name, ozzo.Required, ozzo.Length(1, 255)),

@@ -19,6 +19,19 @@ func NewOrganizationService() *OrganizationService {
 	return &OrganizationService{}
 }
 
+func (s *OrganizationService) GetOrganizationByID(ctx context.Context, querier dal.Querier, orgID int64) (dal.Organization, error) {
+	org, err := querier.GetOrganizationByID(ctx, orgID)
+	if err != nil {
+		return dal.Organization{}, db.MapDBError(err, apperrors.EntityIdentifier{
+			EntityType: "Organization",
+			IDField:    "ID",
+			EntityID:   fmt.Sprintf("%d", orgID),
+		})
+	}
+
+	return org, nil
+}
+
 func (s *OrganizationService) GetOrganizationBySlug(ctx context.Context, querier dal.Querier, slug string) (dal.Organization, error) {
 	org, err := querier.GetOrganizationBySlug(ctx, slug)
 	if err != nil {

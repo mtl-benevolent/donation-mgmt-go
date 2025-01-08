@@ -15,8 +15,6 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-const tzName = "America/Vancouver"
-
 var errRecurrentDonationNotFound = errors.New("recurrent donation not found")
 
 type CreateDonationParams struct {
@@ -53,10 +51,14 @@ func (s *DonationsService) AddPayment(ctx context.Context, querier dal.Querier, 
 	l := logging.WithContextData(ctx, s.l)
 
 	if params.FiscalYear == nil {
-		l.Debug("Fiscal year not provided, extracting from received at", "received_at", params.ReceivedAt, "timezone", tzName)
+		l.Debug("Fiscal year not provided, extracting from received at", "received_at", params.ReceivedAt)
 
-		// TODO: Extract timezone from organization config
-		fiscalYear, err := extractFiscalYear(params.ReceivedAt, tzName)
+		org, err := s.orgSvc.GetOrganizationByID(ctx, querier, params.OrganizationID)
+		if err != nil {
+			return DonationModel{}, err
+		}
+
+		fiscalYear, err := extractFiscalYear(params.ReceivedAt, org.Timezone)
 		if err != nil {
 			return DonationModel{}, fmt.Errorf("failed to extract fiscal year: %w", err)
 		}

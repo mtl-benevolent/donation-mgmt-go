@@ -23,6 +23,11 @@ INNER JOIN scoped_user_roles sur ON sur.organization_id = o.id
 WHERE sur.subject = sqlc.arg('Subject')
 	AND o.archived_at IS NULL;
 
+-- name: GetOrganizationByID :one
+SELECT * from organizations
+WHERE id = sqlc.arg('OrganizationID')
+	AND archived_at IS NULL;
+
 -- name: GetOrganizationBySlug :one
 SELECT * from organizations
 WHERE slug = LOWER(sqlc.arg('Slug'))

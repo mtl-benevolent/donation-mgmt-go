@@ -1,8 +1,10 @@
 package donations
 
 import (
+	"donation-mgmt/src/libs/db"
 	"donation-mgmt/src/libs/gin/ginutils"
 	"donation-mgmt/src/libs/gin/middlewares"
+	"donation-mgmt/src/organizations"
 	"donation-mgmt/src/permissions"
 	"fmt"
 
@@ -11,6 +13,7 @@ import (
 
 const (
 	orgSlugParam = "orgSlug"
+	envParam     = "env"
 )
 
 type ControllerV1 struct {
@@ -24,7 +27,7 @@ func NewControllerV1() *ControllerV1 {
 }
 
 func (c *ControllerV1) RegisterRoutes(router gin.IRouter) {
-	group := router.Group(fmt.Sprintf("/v1/organizations/:%s/donations", orgSlugParam))
+	group := router.Group(fmt.Sprintf("/v1/organizations/:%s/environments/%s/donations", orgSlugParam, envParam))
 
 	permissionCreate := permissions.Donation.Capability(permissions.Create)
 
@@ -43,4 +46,23 @@ func (c *ControllerV1) CreateDonationV1(ctx *gin.Context) {
 		return
 	}
 
+	uow := db.NewUnitOfWorkWithTx()
+	defer uow.Finalize(ctx)
+
+	querier, err := uow.GetQuerier(ctx)
+	if err != nil {
+		_ = ctx.Error(err)
+		return
+	}
+
+	orgSlug := ctx.Params.ByName(orgSlugParam)
+	orgID, err := organizations.GetOrgService().GetOrganizationIDForSlug(ctx, querier, orgSlug)
+	if err != nil {
+		_ = ctx.Error(err)
+		return
+	}
+
+	donation, err := GetDonationsService().AddPayment(ctx, querier, CreateDonationParams{
+		OrganizationID: orgID,
+	})
 }
