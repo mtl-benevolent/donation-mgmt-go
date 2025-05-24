@@ -165,7 +165,6 @@ model Task {
 
   type               TaskType
   status             TaskStatus @default(CREATED)
-  comment            String?
   last_error_message String?
 
   created_at   DateTime  @default(now()) @db.Timestamptz()
@@ -179,7 +178,7 @@ model Task {
   attempt     Int @default(0)
 
   @@index([type, status, created_at, attempt, locked_until])
-  @@map("task_queue")
+  @@map("tasks")
 }
 
 enum TaskType {
