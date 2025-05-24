@@ -17,7 +17,7 @@ type PaginationOptions struct {
 }
 
 type PaginatedDTO[T any] struct {
-	Results []T `json:"items"`
+	Results []T `json:"results"`
 	Total   int `json:"total"`
 	Offset  int `json:"offset"`
 	Limit   int `json:"limit"`
