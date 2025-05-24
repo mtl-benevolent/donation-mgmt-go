@@ -59,6 +59,12 @@ deps:
 	@echo "[INFO] Installing sqlc"
 	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.29.0
 
+.PHONY: install-playwright
+install-playwright:
+	@echo "[INFO] Installing Playwright and its dependencies"
+	@go install github.com/playwright-community/playwright-go/cmd/playwright@v0.5200.0
+	@$$(go env GOPATH)/bin/playwright install chromium-headless-shell --with-deps
+
 .PHONY: migrate
 migrate:
 	@echo "[INFO] Applying pending migrations (in dev mode)"
