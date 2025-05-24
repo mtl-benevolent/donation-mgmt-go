@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_Smoke_CreateOrganizationAsRoot(t *testing.T) {
+func Test_Smoke_CreateOrganization_AsRoot(t *testing.T) {
 	if ok := integration.Prepare(t); !ok {
 		return
 	}
