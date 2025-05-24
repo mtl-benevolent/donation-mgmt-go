@@ -48,7 +48,15 @@ func Bootstrap(gs *lifecycle.GracefulShutdown, rc *lifecycle.ReadyCheck, appConf
 		panic(fmt.Sprintf("Unable to connect to the database: %v", err))
 	}
 
-	l.Info("Database is bootstrapped")
+	l.Info(
+		"Database is bootstrapped",
+		slog.String("connection_string", connectionString),
+		slog.String("host", appConfig.DBHost),
+		slog.Any("port", appConfig.DBPort),
+		slog.String("database_name", appConfig.AppName),
+		// slog.String("app_name", appConfig.AppName),
+		slog.String("schema", appConfig.DBSchema),
+	)
 
 	rc.RegisterPollComponent(componentName, func() bool {
 		l.Debug("Pinging the database")

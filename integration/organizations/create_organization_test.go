@@ -18,8 +18,9 @@ func Test_Smoke_CreateOrganizationAsRoot(t *testing.T) {
 	name := setup.GenerateName()
 
 	req := organizations.CreateOrganizationRequestV1{
-		Name: name,
-		Slug: setup.Slugify(name, 32),
+		Name:     name,
+		Slug:     setup.Slugify(name, 32),
+		TimeZone: "America/Toronto",
 	}
 
 	httpReq := setup.NewHttpReq(t, setup.HttpReqBuilder{

@@ -11,6 +11,16 @@ build_debug:
 	@echo "Building the API in debug mode"
 	@go build -gcflags="all=-N -l" -o $(DIST_PATH)/api $(API_ENTRY)
 
+.PHONY: watch
+watch:
+	@echo "Starting the project in watch mode"
+	@docker compose watch
+
+.PHONE: cleanup
+cleanup:
+	@echo "Cleaning up local environment"
+	@docker compose down -v
+
 generate:
 	@echo "[INFO] Generating code..."
 	@go generate ./...

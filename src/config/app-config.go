@@ -35,9 +35,9 @@ type AppConfiguration struct {
 	LogAddSource bool   `env:"LOG_ADD_SOURCE,default=false"`
 
 	DBHost     string `env:"DB_HOST,default=localhost"`
-	DBPort     uint16 `env:"DB_PORT,default=26257"`
-	DBUser     string `env:"DB_USER,default=donation_mgmt_app"`
-	DBPassword string `env:"DB_PASSWORD,required=true"`
+	DBPort     uint16 `env:"DB_PORT,default=5432"`
+	DBUser     string `env:"DB_USER,default=superuser"`
+	DBPassword string `env:"DB_PASSWORD,default=superuser"`
 	DBName     string `env:"DB_NAME,default=donationsdb"`
 	DBSchema   string `env:"DB_SCHEMA,default=donations"`
 

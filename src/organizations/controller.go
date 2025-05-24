@@ -134,7 +134,7 @@ func GetOrganizationBySlugV1(c *gin.Context) {
 		return
 	}
 
-	slug := c.Params.ByName("slug")
+	slug := c.Params.ByName(ginext.OrgSlugParamName)
 
 	org, err := GetOrgService().GetOrganizationBySlug(c, querier, slug)
 	if err != nil {
@@ -157,7 +157,7 @@ func UpdateOrganizationV1(c *gin.Context) {
 		return
 	}
 
-	slug := c.Params.ByName("slug")
+	slug := c.Params.ByName(ginext.DonationSlugParamName)
 
 	reqDTO := UpdateOrganizationRequestV1{}
 	if err := c.ShouldBindJSON(&reqDTO); err != nil {
