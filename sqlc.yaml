@@ -34,3 +34,16 @@ sql:
             type: Time
             pointer: false
           nullable: false
+        - db_type: "interval"
+          go_type:
+            import: "time"
+            type: Duration
+            pointer: false
+          nullable: false
+        - db_type: "interval"
+          go_type:
+            import: "time"
+            type: Duration
+            pointer: true
+          nullable: true
+

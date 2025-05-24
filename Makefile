@@ -62,4 +62,4 @@ deps:
 .PHONY: migrate
 migrate:
 	@echo "[INFO] Applying pending migrations (in dev mode)"
-	@npx prisma migrate dev
+	@npm run migrate:dev
