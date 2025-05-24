@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -eu
 
 echo "[INFO] Waiting for DB"
 while !</dev/tcp/$DB_HOST/$DB_PORT; do sleep 2; done;

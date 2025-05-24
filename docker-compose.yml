@@ -18,7 +18,7 @@ services:
       - postgres
     build:
       context: .
-      dockerfile: Dockerfile_migrate
+      dockerfile: migrations.Dockerfile
     volumes:
       - ".:/build"
     environment:
@@ -38,7 +38,7 @@ services:
       - postgres
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: api.Dockerfile
       target: build
     develop:
       watch:
@@ -68,6 +68,47 @@ services:
       - DB_SCHEMA=donations
       - GOOGLE_PROJECT_ID=donation-mgmt-stg
       - HTTP_AUTH=devheader
+      - GCP_SA_JSON_PATH=/build/credentials/gcp-sa.json
+    networks:
+      - donation-mgmt
+
+  donation-pdf-worker:
+    depends_on:
+      - postgres
+    build:
+      context: .
+      dockerfile: pdf-worker.Dockerfile
+      args:
+        - INSTALL_BROWSERS=1
+      target: build
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./src
+          target: /build/src
+        - action: sync+restart
+          path: ./sqlc
+          target: /build/sqlc
+        - action: sync+restart
+          path: ./prisma
+          target: /build/prisma
+        - action: sync+restart
+          path: sqlc.yaml
+          target: /build/sqlc.yaml
+        - action: rebuild
+          path: go.mod
+    volumes:
+      - "./tmp/pdfs:/tmp/pdfs"
+    ports:
+      - "18001:18000"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=donation_mgmt_app
+      - DB_PASSWORD=yq2REWv0iD8nepOe1BFskFwPDgn69mFbjt2q3hzmB8THCLtteXKHMws1teMKLIu7
+      - DB_NAME=donationsdb
+      - DB_SCHEMA=donations
+      - GOOGLE_PROJECT_ID=donation-mgmt-stg
       - GCP_SA_JSON_PATH=/build/credentials/gcp-sa.json
     networks:
       - donation-mgmt

@@ -1,10 +1,12 @@
 API_ENTRY = "src/cmd/api/api.go"
+PDF_WORKER_ENTRY = "src/cmd/experiments/generate_pdf.go"
 DIST_PATH = "dist"
 
 .PHONY: build
 build: generate
-	@echo "Building the API"
+	@echo "Building Go binaries"
 	@go build -o $(DIST_PATH)/api $(API_ENTRY)
+	@go build -o $(DIST_PATH)/pdf-worker $(PDF_WORKER_ENTRY)
 
 .PHONY: build_debug
 build_debug:
@@ -59,10 +61,12 @@ deps:
 	@echo "[INFO] Installing sqlc"
 	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.29.0
 
+	@echo "[INFO] Install Playwright"
+	@go install github.com/playwright-community/playwright-go/cmd/playwright@v0.5200.0
+
 .PHONY: install-playwright
 install-playwright:
 	@echo "[INFO] Installing Playwright and its dependencies"
-	@go install github.com/playwright-community/playwright-go/cmd/playwright@v0.5200.0
 	@$$(go env GOPATH)/bin/playwright install chromium-headless-shell --with-deps
 
 .PHONY: migrate

@@ -49,19 +49,26 @@ func exec(l *slog.Logger) error {
 	l.Info("launching Chromium")
 	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
 		Headless:        ptr.Wrap(true),
-		ChromiumSandbox: ptr.Wrap(true),
+		ChromiumSandbox: ptr.Wrap(false),
+		Args: []string{
+			"--no-sandbox",
+			"--disable-setuid-sandbox",
+			"--disable-dev-shm-usage",
+			"--disable-gpu",
+			"--single-process",
+		},
 	})
 	if err != nil {
-		return fmt.Errorf("error launching Webkit: %w", err)
+		return fmt.Errorf("error launching browser: %w", err)
 	}
 
 	defer func() {
 		if err := browser.Close(); err != nil {
-			l.Error("error shutting down WebKit", slog.Any("err", err))
+			l.Error("error shutting down browser", slog.Any("err", err))
 		}
 	}()
 
-	l.Info("Creating new WebKit page")
+	l.Info("Creating new page")
 	page, err := browser.NewPage()
 	if err != nil {
 		return fmt.Errorf("error creating new page: %w", err)
@@ -86,10 +93,9 @@ func exec(l *slog.Logger) error {
 		return fmt.Errorf("error generating PDF: %w", err)
 	}
 
-	fileName := fmt.Sprintf("tmp/%s.pdf", ulid.Make())
+	fileName := fmt.Sprintf("/tmp/pdfs/%s.pdf", ulid.Make())
 	l.Info("Writing PDF content to file", slog.String("path", fileName))
 
-	os.MkdirAll("tmp", 0644)
 	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("unable to create file %s: %w", fileName, err)
