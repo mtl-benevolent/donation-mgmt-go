@@ -1,6 +1,6 @@
-FROM golang:1.23.4-bookworm AS deps
+FROM golang:1.24.2-bookworm AS deps
 
-ENV NODE_MAJOR=20
+ENV NODE_MAJOR=22
 
 RUN apt-get update && \
   apt-get install git ca-certificates make curl gnupg && \
@@ -10,7 +10,7 @@ RUN apt-get update && \
   echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
   apt-get update -y && \
   apt-get install nodejs -y && \
-  go install github.com/go-delve/delve/cmd/dlv@v1.23.1
+  go install github.com/go-delve/delve/cmd/dlv@v1.24.2
   
 WORKDIR /build
 RUN git init --quiet
@@ -18,10 +18,8 @@ RUN git init --quiet
 COPY go.mod go.sum package*.json Makefile ./
 
 RUN go mod download && \
-  npm ci & \
-  make deps; \
-  \
-  wait
+  npm ci && \
+  make deps
 
 FROM deps AS build
 

@@ -44,10 +44,10 @@ seed:
 .PHONY: deps
 deps:
 	@echo "[INFO] Installing linter"
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2
+	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
 
 	@echo "[INFO] Installing sqlc"
-	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.27.0
+	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.29.0
 
 .PHONY: migrate
 migrate:

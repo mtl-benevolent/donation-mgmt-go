@@ -17,9 +17,9 @@
   },
   "homepage": "https://github.com/mtl-benevolent/donation-mgmt-go#readme",
   "devDependencies": {
-    "prisma": "5.8.1"
+    "prisma": "^6.8.2"
   },
   "dependencies": {
-    "@prisma/client": "5.8.1"
+    "@prisma/client": "^6.8.2"
   }
 }
