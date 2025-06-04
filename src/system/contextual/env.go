@@ -23,14 +23,14 @@ func GetEnv(ctx context.Context) string {
 	return env
 }
 
-func GetValidEnv(ctx context.Context) (dal.Enviroment, error) {
+func GetValidEnv(ctx context.Context) (dal.Environment, error) {
 	env := GetEnv(ctx)
 
 	switch strings.ToUpper(env) {
-	case string(dal.EnviromentSANDBOX):
-		return dal.EnviromentSANDBOX, nil
-	case string(dal.EnviromentLIVE):
-		return dal.EnviromentLIVE, nil
+	case string(dal.EnvironmentSANDBOX):
+		return dal.EnvironmentSANDBOX, nil
+	case string(dal.EnvironmentLIVE):
+		return dal.EnvironmentLIVE, nil
 	default:
 		return "", &apperrors.ValidationError{
 			EntityName: "Environment",

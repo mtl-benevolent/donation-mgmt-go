@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "Enviroment" AS ENUM ('SANDBOX', 'LIVE');
+CREATE TYPE "Environment" AS ENUM ('SANDBOX', 'LIVE');
 
 -- CreateEnum
 CREATE TYPE "DonationType" AS ENUM ('ONE_TIME', 'RECURRENT');
@@ -56,7 +56,7 @@ CREATE TABLE "donations" (
     "slug" TEXT NOT NULL,
     "organization_id" BIGINT NOT NULL,
     "external_id" TEXT,
-    "environment" "Enviroment" NOT NULL,
+    "environment" "Environment" NOT NULL,
     "fiscal_year" SMALLINT NOT NULL,
     "reason" TEXT,
     "type" "DonationType" NOT NULL,

@@ -21,7 +21,6 @@ func registerRoutes(router *gin.Engine) {
 	orgRouter.GET("", ListOrganizationsV1) // Permissions are handled as part of the query
 	orgRouter.POST("", middlewares.WithGlobalAuthorization(p.Organization, p.Organization.Capability(p.Create)), CreateOrganizationV1)
 	orgRouter.GET(fmt.Sprintf("/:%s", ginext.OrgSlugParamName), middlewares.WithOrgAuthorization(ginext.OrgSlugParamName, p.Organization.Capability(p.Read)), GetOrganizationBySlugV1)
-	orgRouter.PUT(fmt.Sprintf("/:%s", ginext.OrgSlugParamName), middlewares.WithOrgAuthorization(ginext.OrgSlugParamName, p.Organization.Capability(p.Update)), UpdateOrganizationV1)
 }
 
 func ListOrganizationsV1(c *gin.Context) {
@@ -105,10 +104,12 @@ func CreateOrganizationV1(c *gin.Context) {
 	}
 
 	org, err := GetOrgService().CreateOrganization(c, querier, dal.InsertOrganizationParams{
-		Name:     reqDTO.Name,
-		Slug:     reqDTO.Slug,
-		TimeZone: reqDTO.TimeZone,
+		Name: reqDTO.Name,
+		Slug: reqDTO.Slug,
 	})
+
+	// TODO: Insert settings for each environment
+	// TODO: Insert templates for each environment
 
 	if err != nil {
 		_ = c.Error(err)
@@ -147,56 +148,11 @@ func GetOrganizationBySlugV1(c *gin.Context) {
 	c.JSON(http.StatusOK, dto)
 }
 
-func UpdateOrganizationV1(c *gin.Context) {
-	uow := db.NewUnitOfWorkWithTx()
-	defer uow.Finalize(c)
-
-	querier, err := uow.GetQuerier(c)
-	if err != nil {
-		_ = c.Error(err)
-		return
-	}
-
-	slug := c.Params.ByName(ginext.DonationSlugParamName)
-
-	reqDTO := UpdateOrganizationRequestV1{}
-	if err := c.ShouldBindJSON(&reqDTO); err != nil {
-		_ = c.Error(err)
-		return
-	}
-
-	if err := reqDTO.Validate(); err != nil {
-		_ = c.Error(err)
-		return
-	}
-
-	org, err := GetOrgService().UpdateOrganization(c, querier, dal.UpdateOrganizationBySlugParams{
-		Slug:     slug,
-		Name:     reqDTO.Name,
-		TimeZone: reqDTO.Timezone,
-	})
-
-	if err != nil {
-		_ = c.Error(err)
-		return
-	}
-
-	if err = uow.Commit(c); err != nil {
-		_ = c.Error(err)
-		return
-	}
-
-	dto := mapOrgToDTO(org)
-
-	c.JSON(http.StatusOK, dto)
-}
-
 func mapOrgToDTO(org dal.Organization) OrganizationDTOV1 {
 	return OrganizationDTOV1{
 		ID:        org.ID,
 		Name:      org.Name,
 		Slug:      org.Slug,
-		TimeZone:  org.Timezone,
 		CreatedAt: org.CreatedAt,
 	}
 }

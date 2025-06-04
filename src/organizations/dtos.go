@@ -15,7 +15,6 @@ type OrganizationDTOV1 struct {
 	ID        int64     `json:"id"`
 	Name      string    `json:"name"`
 	Slug      string    `json:"slug"`
-	TimeZone  string    `json:"timezone"`
 	CreatedAt time.Time `json:"createdAt"`
 }
 

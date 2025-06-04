@@ -12,7 +12,7 @@ import (
 
 type GetDonationByIDParams struct {
 	OrganizationID int64
-	Environment    dal.Enviroment
+	Environment    dal.Environment
 	DonationID     int64
 }
 
@@ -40,7 +40,7 @@ func (s *DonationsService) GetDonationByID(ctx context.Context, querier dal.Quer
 
 type GetDonationBySlugParams struct {
 	OrganizationID int64
-	Environment    dal.Enviroment
+	Environment    dal.Environment
 	Slug           string
 }
 

@@ -19,7 +19,7 @@ var errRecurrentDonationNotFound = errors.New("recurrent donation not found")
 
 type CreateDonationParams struct {
 	OrganizationID int64
-	Environment    dal.Enviroment
+	Environment    dal.Environment
 	ExternalID     *string
 	Reason         *string
 	Type           dal.DonationType
@@ -53,7 +53,7 @@ func (s *DonationsService) AddPayment(ctx context.Context, querier dal.Querier, 
 	if params.FiscalYear == nil {
 		l.Debug("Fiscal year not provided, extracting from received at", "received_at", params.ReceivedAt)
 
-		org, err := s.orgSvc.GetOrganizationByID(ctx, querier, params.OrganizationID)
+		org, err := s.orgSvc.GetOrganizationWithSettings(ctx, querier, params.OrganizationID, params.Environment)
 		if err != nil {
 			return DonationModel{}, err
 		}

@@ -32,6 +32,22 @@ func (s *OrganizationService) GetOrganizationByID(ctx context.Context, querier d
 	return org, nil
 }
 
+func (s *OrganizationService) GetOrganizationWithSettings(ctx context.Context, querier dal.Querier, orgID int64, env dal.Environment) (dal.GetOrganizationWithSettingsRow, error) {
+	orgWithSettings, err := querier.GetOrganizationWithSettings(ctx, dal.GetOrganizationWithSettingsParams{
+		OrganizationID: orgID,
+		Environment:    env,
+	})
+	if err != nil {
+		return dal.GetOrganizationWithSettingsRow{}, db.MapDBError(err, apperrors.EntityIdentifier{
+			EntityType: "Organization",
+			IDField:    "ID",
+			EntityID:   fmt.Sprintf("%d", orgID),
+		})
+	}
+
+	return orgWithSettings, nil
+}
+
 func (s *OrganizationService) GetOrganizationBySlug(ctx context.Context, querier dal.Querier, slug string) (dal.Organization, error) {
 	org, err := querier.GetOrganizationBySlug(ctx, slug)
 	if err != nil {
@@ -58,7 +74,7 @@ func (s *OrganizationService) GetOrganizationIDForSlug(ctx context.Context, quer
 	return orgID, nil
 }
 
-func (s *OrganizationService) ListFiscalYearsForOrganization(ctx context.Context, querier dal.Querier, orgID int64, environment dal.Enviroment) ([]int16, error) {
+func (s *OrganizationService) ListFiscalYearsForOrganization(ctx context.Context, querier dal.Querier, orgID int64, environment dal.Environment) ([]int16, error) {
 	fiscalYears, err := querier.ListOrganizationFiscalYears(ctx, dal.ListOrganizationFiscalYearsParams{
 		OrganizationID: orgID,
 		Environment:    environment,
@@ -142,16 +158,4 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, querier da
 	}
 
 	return inserted, nil
-}
-
-func (s *OrganizationService) UpdateOrganization(ctx context.Context, querier dal.Querier, params dal.UpdateOrganizationBySlugParams) (dal.Organization, error) {
-	updated, err := querier.UpdateOrganizationBySlug(ctx, params)
-	if err != nil {
-		return updated, db.MapDBError(err, apperrors.EntityIdentifier{
-			EntityType: "Organization",
-			EntityID:   params.Slug,
-		})
-	}
-
-	return updated, nil
 }

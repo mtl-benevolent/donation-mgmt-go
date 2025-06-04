@@ -13,6 +13,15 @@ services:
     networks:
       - donation-mgmt
 
+  smtp:
+    image: rnwood/smtp4dev:3.8.7-ci20250513100
+    ports:
+      - 6080:80
+    volumes:
+      - "/smtp4dev"
+    networks:
+      - donation-mgmt
+
   db-migrate-and-seed:
     depends_on:
       - postgres
