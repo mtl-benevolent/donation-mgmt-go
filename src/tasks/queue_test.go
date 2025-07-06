@@ -1,0 +1,177 @@
+package tasks_test
+
+import (
+	"context"
+	"donation-mgmt/src/config"
+	"donation-mgmt/src/dal"
+	"donation-mgmt/src/libs/logger"
+	"donation-mgmt/src/tasks"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+type mockHandler struct {
+	called   *atomic.Int32
+	panicVal any
+	err      error
+	handler  func(ctx context.Context, task *dal.Task) error // Optional custom handler
+}
+
+func (m *mockHandler) HandleTask(ctx context.Context, task *dal.Task) error {
+	m.called.Add(1)
+	if m.panicVal != nil {
+		panic(m.panicVal)
+	}
+
+	// If custom handler is provided, use it
+	if m.handler != nil {
+		return m.handler(ctx, task)
+	}
+
+	return m.err
+}
+
+func Test_WhenTaskIsProcessed_ShouldCallHandlerAndAck(t *testing.T) {
+	logger.BootstrapLogger(&config.AppConfiguration{LogLevel: "ERROR"})
+
+	h := &mockHandler{called: &atomic.Int32{}}
+
+	dal := &mockDAL{
+		mutex:       &sync.Mutex{},
+		pickedTasks: []dal.Task{{ID: 1, Type: "TEST", Attempt: 0, MaxRetries: 1}},
+		ackCalled:   &atomic.Bool{},
+		nackCalled:  &atomic.Bool{},
+	}
+
+	q, err := tasks.NewQueue(&dalWrapper{dal}, tasks.QueueConfig{
+		QueueName:    "test",
+		WorkerSlots:  1,
+		WorkHandlers: tasks.TaskHandlerMap{"TEST": h},
+		PollInterval: 10 * time.Millisecond,
+		LockDuration: 100 * time.Millisecond,
+	})
+	require.NoError(t, err, "failed to create queue")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	go q.Start(ctx)
+
+	time.Sleep(50 * time.Millisecond)
+	assert.Greater(t, h.called.Load(), int32(0), "handler was not called")
+	assert.True(t, dal.ackCalled.Load(), "ack was not called")
+}
+
+func Test_WhenHandlerReturnsRetryableError_ShouldNack(t *testing.T) {
+	logger.BootstrapLogger(&config.AppConfiguration{LogLevel: "ERROR"})
+
+	h := &mockHandler{called: &atomic.Int32{}, err: tasks.ErrRetryable}
+
+	dal := &mockDAL{
+		mutex:       &sync.Mutex{},
+		pickedTasks: []dal.Task{{ID: 2, Type: "TEST", Attempt: 0, MaxRetries: 1}},
+		ackCalled:   &atomic.Bool{},
+		nackCalled:  &atomic.Bool{},
+	}
+	q, err := tasks.NewQueue(&dalWrapper{dal}, tasks.QueueConfig{
+		QueueName:    "test",
+		WorkerSlots:  1,
+		WorkHandlers: tasks.TaskHandlerMap{"TEST": h},
+		PollInterval: 10 * time.Millisecond,
+		LockDuration: 100 * time.Millisecond,
+	})
+	require.NoError(t, err, "failed to create queue")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	go q.Start(ctx)
+
+	time.Sleep(50 * time.Millisecond)
+	assert.Greater(t, h.called.Load(), int32(0), "handler was not called")
+	assert.True(t, dal.nackCalled.Load(), "nack was not called for retryable error")
+}
+
+func Test_WhenHandlerPanics_ShouldNack(t *testing.T) {
+	logger.BootstrapLogger(&config.AppConfiguration{LogLevel: "ERROR"})
+
+	h := &mockHandler{called: &atomic.Int32{}, panicVal: "panic!"}
+
+	dal := &mockDAL{
+		mutex:       &sync.Mutex{},
+		pickedTasks: []dal.Task{{ID: 3, Type: "TEST", Attempt: 0, MaxRetries: 1}},
+		ackCalled:   &atomic.Bool{},
+		nackCalled:  &atomic.Bool{},
+	}
+
+	q, err := tasks.NewQueue(&dalWrapper{dal}, tasks.QueueConfig{
+		QueueName:    "test",
+		WorkerSlots:  1,
+		WorkHandlers: tasks.TaskHandlerMap{"TEST": h},
+		PollInterval: 10 * time.Millisecond,
+		LockDuration: 100 * time.Millisecond,
+	})
+	require.NoError(t, err, "failed to create queue")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	go q.Start(ctx)
+
+	time.Sleep(50 * time.Millisecond)
+	assert.Greater(t, h.called.Load(), int32(0), "handler was not called")
+	assert.True(t, dal.nackCalled.Load(), "nack was not called for panic")
+}
+
+func Test_WhenMultipleTasksAvailable_ShouldOnlyPullUpToWorkerSlots(t *testing.T) {
+	logger.BootstrapLogger(&config.AppConfiguration{LogLevel: "ERROR"})
+
+	workerSlots := 2
+	totalTasks := 5
+
+	mockDAL := &mockDAL{
+		mutex:       &sync.Mutex{},
+		pickedTasks: make([]dal.Task, totalTasks),
+		ackCalled:   &atomic.Bool{},
+		nackCalled:  &atomic.Bool{},
+	}
+	for i := 0; i < totalTasks; i++ {
+		mockDAL.pickedTasks[i] = dal.Task{ID: int64(i + 1), Type: "TEST", Attempt: 0, MaxRetries: 1}
+	}
+
+	done := make(chan struct{})
+
+	// Use a custom handler that holds the task until signaled
+	handler := &mockHandler{
+		called: &atomic.Int32{},
+		handler: func(ctx context.Context, task *dal.Task) error {
+			// Wait for the done channel to be closed, or the context to be done
+			select {
+			case <-done:
+				return nil
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		},
+	}
+
+	q, err := tasks.NewQueue(&dalWrapper{mockDAL}, tasks.QueueConfig{
+		QueueName:    "test",
+		WorkerSlots:  workerSlots,
+		WorkHandlers: tasks.TaskHandlerMap{"TEST": handler},
+		PollInterval: 10 * time.Millisecond,
+		LockDuration: 100 * time.Millisecond,
+	})
+	require.NoError(t, err, "failed to create queue")
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	go q.Start(ctx)
+	time.Sleep(30 * time.Millisecond)
+
+	close(done) // Signal all handlers to complete
+
+	// Only up to workerSlots tasks should be processed at a time
+	assert.LessOrEqual(t, int(handler.called.Load()), workerSlots, "should not process more tasks than worker slots at a time")
+}

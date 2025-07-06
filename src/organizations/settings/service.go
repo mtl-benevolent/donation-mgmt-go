@@ -95,5 +95,38 @@ func (s *OrgSettingsService) marshalSettings(settings EmailProviderSettings) ([]
 }
 
 func (s *OrgSettingsService) MapDALToModel(origin dal.OrganizationSetting) (OrganizationSettings, error) {
+	model := OrganizationSettings{
+		OrganizationID:        origin.OrganizationID,
+		Environment:           origin.Environment,
+		Timezone:              origin.Timezone,
+		EmailProvider:         origin.EmailProvider,
+		EmailProviderSettings: EmailProviderSettings{},
+		IsValid:               origin.IsValid,
+		UpdatedAt:             origin.UpdatedAt,
+	}
 
+	if len(origin.EmailProviderSettings) > 0 {
+		var settings EmailProviderSettings
+		err := json.Unmarshal(origin.EmailProviderSettings, &settings)
+		if err != nil {
+			return OrganizationSettings{}, fmt.Errorf("error unmarshalling email provider settings: %w", err)
+		}
+
+		if settings.SMTP != nil {
+			var password *string = nil
+			if settings.SMTP.Password != nil {
+				password = ptr.Wrap("***")
+			}
+
+			model.EmailProviderSettings.SMTP = &SMTPSettings{
+				Host:        settings.SMTP.Host,
+				Port:        settings.SMTP.Port,
+				Username:    settings.SMTP.Username,
+				Password:    password,
+				SenderEmail: settings.SMTP.SenderEmail,
+			}
+		}
+	}
+
+	return model, nil
 }
