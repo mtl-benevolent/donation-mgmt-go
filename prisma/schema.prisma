@@ -29,10 +29,6 @@ model Organization {
   @@map("organizations")
 }
 
-enum EmailProvider {
-  SMTP
-}
-
 model OrganizationSettings {
   organization    Organization @relation(fields: [organization_id], references: [id])
   organization_id BigInt
@@ -41,8 +37,8 @@ model OrganizationSettings {
 
   timezone String @default("America/Toronto")
 
-  email_provider          EmailProvider
-  email_provider_settings Json
+  // Encrypted settings, in JSON format
+  email_provider_settings String
 
   is_valid Boolean @default(false)
 

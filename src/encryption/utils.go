@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -18,10 +19,19 @@ func parseKey(keyHex string) ([]byte, error) {
 	}
 
 	if len(key) != 32 {
-		return []byte{}, fmt.Errorf("Encryption Key must be 32 bytes long")
+		return []byte{}, fmt.Errorf("encryption Key must be 32 bytes long")
 	}
 
 	return key, nil
+}
+
+func EncryptJSON(obj any, keyHex string) (string, error) {
+	json, err := json.Marshal(obj)
+	if err != nil {
+		return "", err
+	}
+
+	return EncryptString(string(json), keyHex)
 }
 
 func EncryptString(str string, keyHex string) (string, error) {
@@ -51,6 +61,20 @@ func EncryptString(str string, keyHex string) (string, error) {
 	base64Ciphertext := base64.StdEncoding.EncodeToString(ciphertext)
 
 	return base64Ciphertext, nil
+}
+
+func DecryptJSON[T any](encrypted string, keyHex string) (T, error) {
+	var defaultVal T
+	jsonVal, err := DecryptString(encrypted, keyHex)
+	if err != nil {
+		return defaultVal, err
+	}
+
+	if err = json.Unmarshal([]byte(jsonVal), &defaultVal); err != nil {
+		return defaultVal, err
+	}
+
+	return defaultVal, nil
 }
 
 func DecryptString(encrypted string, keyHex string) (string, error) {

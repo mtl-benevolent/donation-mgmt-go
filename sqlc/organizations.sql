@@ -62,17 +62,26 @@ WHERE d.organization_id = sqlc.arg('OrganizationID')
 ORDER BY fiscal_year DESC;
 
 -- name: UpsertOrganizationSettings :one
-INSERT INTO organization_settings(organization_id, environment, timezone, email_provider, email_provider_settings)
+INSERT INTO organization_settings(organization_id, environment, timezone)
 VALUES(
 	sqlc.arg('OrganizationID'),
 	sqlc.arg('Environment'),
-	sqlc.narg('Timezone'),
-	sqlc.narg('EmailProvider'),
-	COALESCE(sqlc.narg('EmailProviderSettings')::JSONB, '{}'::JSONB)
+	sqlc.narg('Timezone')
 )
 ON CONFLICT (organization_id, environment)
 DO UPDATE
-	SET timezone = COALESCE(sqlc.narg('Timezone'), EXCLUDED.timezone),
-	email_provider = COALESCE(sqlc.narg('EmailProvider'), EXCLUDED.email_provider),
-	email_provider_settings = COALESCE(sqlc.narg('EmailProviderSettings')::JSONB, EXCLUDED.email_provider_settings)
+	SET timezone = COALESCE(sqlc.narg('Timezone'), EXCLUDED.timezone)
 RETURNING *;
+
+-- name: GetOrganizationEmailSettings :one
+SELECT organization_id, environment, email_provider_settings
+FROM organization_settings
+WHERE organization_id = sqlc.arg('OrganizationID')
+	AND environment = sqlc.arg('Environment');
+
+-- name: UpdateOrganizationEmailSettings :execrows
+UPDATE organization_settings
+SET email_provider_settings = sqlc.arg('EmailProviderSettings')
+WHERE
+	organization_id = sqlc.arg('OrganizationID')
+	AND environment = sqlc.arg('Environment');

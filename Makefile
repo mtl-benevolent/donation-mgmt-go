@@ -18,6 +18,11 @@ watch:
 	@echo "Starting the project in watch mode"
 	@docker compose watch
 
+.PHONY: test
+test: generate
+	@echo "Running tests"
+	@go test ./src/...
+
 .PHONE: cleanup
 cleanup:
 	@echo "Cleaning up local environment"
@@ -63,6 +68,9 @@ deps:
 
 	@echo "[INFO] Install Playwright"
 	@go install github.com/playwright-community/playwright-go/cmd/playwright@v0.5200.0
+
+	@echo "[INFO] Installing mockery"
+	@go install github.com/vektra/mockery/v2@v2.53.4
 
 .PHONY: install-playwright
 install-playwright:

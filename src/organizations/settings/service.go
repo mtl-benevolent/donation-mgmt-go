@@ -2,9 +2,10 @@ package settings
 
 import (
 	"context"
+	"donation-mgmt/src/apperrors"
 	"donation-mgmt/src/dal"
 	"donation-mgmt/src/encryption"
-	"donation-mgmt/src/ptr"
+	"donation-mgmt/src/libs/db"
 	"encoding/json"
 	"fmt"
 )
@@ -29,9 +30,6 @@ func (s *OrgSettingsService) InsertDefaultSettings(ctx context.Context, querier 
 		_, err := querier.UpsertOrganizationSettings(ctx, dal.UpsertOrganizationSettingsParams{
 			OrganizationID: orgID,
 			Environment:    env,
-			EmailProvider: dal.NullEmailProvider{
-				Valid: false,
-			},
 		})
 
 		if err != nil {
@@ -42,12 +40,21 @@ func (s *OrgSettingsService) InsertDefaultSettings(ctx context.Context, querier 
 	return nil
 }
 
+type GetSettingsParams struct {
+	OrgID       int64
+	Environment dal.Environment
+}
+
 type UpdateSettingsParams struct {
+	OrgID       int64
+	Environment dal.Environment
+	Timezone    *string
+}
+
+type UpdateEmailSettingsParams struct {
 	OrgID                 int64
 	Environment           dal.Environment
-	Timezone              *string
-	EmailProvider         *dal.EmailProvider
-	EmailProviderSettings *EmailProviderSettings
+	EmailProviderSettings EmailProviderSettings
 }
 
 func (s *OrgSettingsService) UpdateSettings(ctx context.Context, querier dal.Querier, params UpdateSettingsParams) (OrganizationSettings, error) {
@@ -57,75 +64,109 @@ func (s *OrgSettingsService) UpdateSettings(ctx context.Context, querier dal.Que
 		Timezone:       params.Timezone,
 	}
 
-	if params.EmailProvider != nil {
-		updates.EmailProvider = dal.NullEmailProvider{
-			EmailProvider: *params.EmailProvider,
-			Valid:         true,
-		}
-	}
-
-	if params.EmailProviderSettings != nil {
-		bytes, err := s.marshalSettings(*params.EmailProviderSettings)
-		if err != nil {
-			return OrganizationSettings{}, fmt.Errorf("error marshalling email provider settings: %w", err)
-		}
-
-		updates.EmailProviderSettings = bytes
-	}
-
 	updated, err := querier.UpsertOrganizationSettings(ctx, updates)
 	if err != nil {
-		return OrganizationSettings{}, fmt.Errorf("error updating organization settings: %w", err)
+		return OrganizationSettings{}, db.MapDBError(err, apperrors.EntityIdentifier{
+			EntityType: "Organization",
+			IDField:    "OrgID",
+			EntityID:   fmt.Sprintf("%d", params.OrgID),
+			Extras: map[string]any{
+				"Environment": params.Environment,
+			},
+		})
 	}
 
 	return s.MapDALToModel(updated)
 }
 
-func (s *OrgSettingsService) marshalSettings(settings EmailProviderSettings) ([]byte, error) {
-	if settings.SMTP != nil && settings.SMTP.Password != nil {
-		encrypted, err := encryption.EncryptString(*settings.SMTP.Password, s.encryptionKeyHex)
-		if err != nil {
-			return nil, fmt.Errorf("could not encrypt SMTP password")
-		}
+func (s *OrgSettingsService) GetEmailSettings(ctx context.Context, querier dal.Querier, params GetSettingsParams) (EmailProviderSettings, error) {
+	row, err := querier.GetOrganizationEmailSettings(ctx, dal.GetOrganizationEmailSettingsParams{
+		OrganizationID: params.OrgID,
+		Environment:    params.Environment,
+	})
 
-		settings.SMTP.Password = ptr.Wrap(encrypted)
+	errIdentitifer := apperrors.EntityIdentifier{
+		EntityType: "Organization",
+		IDField:    "OrgID",
+		EntityID:   fmt.Sprintf("%d", params.OrgID),
+		Extras: map[string]any{
+			"Environment": params.Environment,
+		},
 	}
 
-	return json.Marshal(settings)
+	if err != nil {
+		return EmailProviderSettings{}, db.MapDBError(err, errIdentitifer)
+	}
+
+	if len(row.EmailProviderSettings) <= 0 {
+		return EmailProviderSettings{}, &apperrors.EntityNotFoundError{
+			EntityID: errIdentitifer,
+		}
+	}
+
+	var encryptedSettings EncryptedEmailProviderSettings
+	if err := json.Unmarshal([]byte(row.EmailProviderSettings), &encryptedSettings); err != nil {
+		return EmailProviderSettings{}, fmt.Errorf("error unmarshaling email settings: %w", err)
+	}
+
+	settings := EmailProviderSettings{
+		Provider: encryptedSettings.Provider,
+	}
+
+	// SMTP Provider
+	if settings.Provider == SMTPEmailProvider && encryptedSettings.EncryptedSMTP != nil {
+		smtp, err := encryption.DecryptJSON[SMTPSettings](*encryptedSettings.EncryptedSMTP, s.encryptionKeyHex)
+		if err != nil {
+			return EmailProviderSettings{}, fmt.Errorf("unable to decrypt email settings: %w", err)
+		}
+
+		settings.SMTP = &smtp
+	}
+
+	return settings, nil
+}
+
+func (s *OrgSettingsService) UpdateEmailSettings(ctx context.Context, querier dal.Querier, params UpdateEmailSettingsParams) error {
+	encryptedVal, err := encryption.EncryptJSON(params.EmailProviderSettings, s.encryptionKeyHex)
+	if err != nil {
+		return fmt.Errorf("unable to encrypt email settings: %w", err)
+	}
+
+	updatedCount, err := querier.UpdateOrganizationEmailSettings(ctx, dal.UpdateOrganizationEmailSettingsParams{
+		OrganizationID:        params.OrgID,
+		Environment:           params.Environment,
+		EmailProviderSettings: encryptedVal,
+	})
+
+	entityID := apperrors.EntityIdentifier{
+		EntityType: "EmailSettings",
+		IDField:    "OrganizationID",
+		EntityID:   fmt.Sprintf("%d", params.OrgID),
+		Extras: map[string]any{
+			"Environment": params.Environment,
+		},
+	}
+
+	if err != nil {
+		return db.MapDBError(err, entityID)
+	}
+
+	if updatedCount == 0 {
+		return &apperrors.EntityNotFoundError{
+			EntityID: entityID,
+		}
+	}
+
+	return nil
 }
 
 func (s *OrgSettingsService) MapDALToModel(origin dal.OrganizationSetting) (OrganizationSettings, error) {
 	model := OrganizationSettings{
-		OrganizationID:        origin.OrganizationID,
-		Environment:           origin.Environment,
-		Timezone:              origin.Timezone,
-		EmailProvider:         origin.EmailProvider,
-		EmailProviderSettings: EmailProviderSettings{},
-		IsValid:               origin.IsValid,
-		UpdatedAt:             origin.UpdatedAt,
-	}
-
-	if len(origin.EmailProviderSettings) > 0 {
-		var settings EmailProviderSettings
-		err := json.Unmarshal(origin.EmailProviderSettings, &settings)
-		if err != nil {
-			return OrganizationSettings{}, fmt.Errorf("error unmarshalling email provider settings: %w", err)
-		}
-
-		if settings.SMTP != nil {
-			var password *string = nil
-			if settings.SMTP.Password != nil {
-				password = ptr.Wrap("***")
-			}
-
-			model.EmailProviderSettings.SMTP = &SMTPSettings{
-				Host:        settings.SMTP.Host,
-				Port:        settings.SMTP.Port,
-				Username:    settings.SMTP.Username,
-				Password:    password,
-				SenderEmail: settings.SMTP.SenderEmail,
-			}
-		}
+		OrganizationID: origin.OrganizationID,
+		Environment:    origin.Environment,
+		Timezone:       origin.Timezone,
+		IsValid:        origin.IsValid,
+		UpdatedAt:      origin.UpdatedAt,
 	}
 
 	return model, nil

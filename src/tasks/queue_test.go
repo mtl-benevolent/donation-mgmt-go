@@ -4,14 +4,15 @@ import (
 	"context"
 	"donation-mgmt/src/config"
 	"donation-mgmt/src/dal"
+	dalmocks "donation-mgmt/src/dal/mocks"
 	"donation-mgmt/src/libs/logger"
 	"donation-mgmt/src/tasks"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -41,14 +42,11 @@ func Test_WhenTaskIsProcessed_ShouldCallHandlerAndAck(t *testing.T) {
 
 	h := &mockHandler{called: &atomic.Int32{}}
 
-	dal := &mockDAL{
-		mutex:       &sync.Mutex{},
-		pickedTasks: []dal.Task{{ID: 1, Type: "TEST", Attempt: 0, MaxRetries: 1}},
-		ackCalled:   &atomic.Bool{},
-		nackCalled:  &atomic.Bool{},
-	}
+	mockQuerier := dalmocks.NewQuerier(t)
+	mockQuerier.On("PickTasks", mock.Anything, mock.Anything).Return([]dal.Task{{ID: 1, Type: "TEST", Attempt: 0, MaxRetries: 1}}, nil)
+	mockQuerier.On("AckTasks", mock.Anything, []int64{1}).Return(int64(1), nil)
 
-	q, err := tasks.NewQueue(&dalWrapper{dal}, tasks.QueueConfig{
+	q, err := tasks.NewQueue(mockQuerier, tasks.QueueConfig{
 		QueueName:    "test",
 		WorkerSlots:  1,
 		WorkHandlers: tasks.TaskHandlerMap{"TEST": h},
@@ -63,7 +61,7 @@ func Test_WhenTaskIsProcessed_ShouldCallHandlerAndAck(t *testing.T) {
 
 	time.Sleep(50 * time.Millisecond)
 	assert.Greater(t, h.called.Load(), int32(0), "handler was not called")
-	assert.True(t, dal.ackCalled.Load(), "ack was not called")
+	mockQuerier.AssertExpectations(t)
 }
 
 func Test_WhenHandlerReturnsRetryableError_ShouldNack(t *testing.T) {
@@ -71,13 +69,11 @@ func Test_WhenHandlerReturnsRetryableError_ShouldNack(t *testing.T) {
 
 	h := &mockHandler{called: &atomic.Int32{}, err: tasks.ErrRetryable}
 
-	dal := &mockDAL{
-		mutex:       &sync.Mutex{},
-		pickedTasks: []dal.Task{{ID: 2, Type: "TEST", Attempt: 0, MaxRetries: 1}},
-		ackCalled:   &atomic.Bool{},
-		nackCalled:  &atomic.Bool{},
-	}
-	q, err := tasks.NewQueue(&dalWrapper{dal}, tasks.QueueConfig{
+	mockQuerier := dalmocks.NewQuerier(t)
+	mockQuerier.On("PickTasks", mock.Anything, mock.Anything).Return([]dal.Task{{ID: 2, Type: "TEST", Attempt: 0, MaxRetries: 1}}, nil)
+	mockQuerier.On("NackTask", mock.Anything, mock.Anything).Return(int64(1), nil)
+
+	q, err := tasks.NewQueue(mockQuerier, tasks.QueueConfig{
 		QueueName:    "test",
 		WorkerSlots:  1,
 		WorkHandlers: tasks.TaskHandlerMap{"TEST": h},
@@ -92,7 +88,7 @@ func Test_WhenHandlerReturnsRetryableError_ShouldNack(t *testing.T) {
 
 	time.Sleep(50 * time.Millisecond)
 	assert.Greater(t, h.called.Load(), int32(0), "handler was not called")
-	assert.True(t, dal.nackCalled.Load(), "nack was not called for retryable error")
+	mockQuerier.AssertExpectations(t)
 }
 
 func Test_WhenHandlerPanics_ShouldNack(t *testing.T) {
@@ -100,14 +96,11 @@ func Test_WhenHandlerPanics_ShouldNack(t *testing.T) {
 
 	h := &mockHandler{called: &atomic.Int32{}, panicVal: "panic!"}
 
-	dal := &mockDAL{
-		mutex:       &sync.Mutex{},
-		pickedTasks: []dal.Task{{ID: 3, Type: "TEST", Attempt: 0, MaxRetries: 1}},
-		ackCalled:   &atomic.Bool{},
-		nackCalled:  &atomic.Bool{},
-	}
+	mockQuerier := dalmocks.NewQuerier(t)
+	mockQuerier.On("PickTasks", mock.Anything, mock.Anything).Return([]dal.Task{{ID: 3, Type: "TEST", Attempt: 0, MaxRetries: 1}}, nil)
+	mockQuerier.On("NackTask", mock.Anything, mock.Anything).Return(int64(1), nil)
 
-	q, err := tasks.NewQueue(&dalWrapper{dal}, tasks.QueueConfig{
+	q, err := tasks.NewQueue(mockQuerier, tasks.QueueConfig{
 		QueueName:    "test",
 		WorkerSlots:  1,
 		WorkHandlers: tasks.TaskHandlerMap{"TEST": h},
@@ -122,7 +115,7 @@ func Test_WhenHandlerPanics_ShouldNack(t *testing.T) {
 
 	time.Sleep(50 * time.Millisecond)
 	assert.Greater(t, h.called.Load(), int32(0), "handler was not called")
-	assert.True(t, dal.nackCalled.Load(), "nack was not called for panic")
+	mockQuerier.AssertExpectations(t)
 }
 
 func Test_WhenMultipleTasksAvailable_ShouldOnlyPullUpToWorkerSlots(t *testing.T) {
@@ -131,15 +124,15 @@ func Test_WhenMultipleTasksAvailable_ShouldOnlyPullUpToWorkerSlots(t *testing.T)
 	workerSlots := 2
 	totalTasks := 5
 
-	mockDAL := &mockDAL{
-		mutex:       &sync.Mutex{},
-		pickedTasks: make([]dal.Task, totalTasks),
-		ackCalled:   &atomic.Bool{},
-		nackCalled:  &atomic.Bool{},
-	}
+	// Create tasks for the mock to return
+	taskList := make([]dal.Task, totalTasks)
 	for i := 0; i < totalTasks; i++ {
-		mockDAL.pickedTasks[i] = dal.Task{ID: int64(i + 1), Type: "TEST", Attempt: 0, MaxRetries: 1}
+		taskList[i] = dal.Task{ID: int64(i + 1), Type: "TEST", Attempt: 0, MaxRetries: 1}
 	}
+
+	mockQuerier := dalmocks.NewQuerier(t)
+	mockQuerier.On("PickTasks", mock.Anything, mock.Anything).Return(taskList, nil)
+	mockQuerier.On("AckTasks", mock.Anything, mock.Anything).Return(int64(1), nil)
 
 	done := make(chan struct{})
 
@@ -157,7 +150,7 @@ func Test_WhenMultipleTasksAvailable_ShouldOnlyPullUpToWorkerSlots(t *testing.T)
 		},
 	}
 
-	q, err := tasks.NewQueue(&dalWrapper{mockDAL}, tasks.QueueConfig{
+	q, err := tasks.NewQueue(mockQuerier, tasks.QueueConfig{
 		QueueName:    "test",
 		WorkerSlots:  workerSlots,
 		WorkHandlers: tasks.TaskHandlerMap{"TEST": handler},

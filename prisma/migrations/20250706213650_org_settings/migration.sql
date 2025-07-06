@@ -1,19 +1,9 @@
-/*
-  Warnings:
-
-  - You are about to drop the column `timezone` on the `organizations` table. All the data in the column will be lost.
-
-*/
--- CreateEnum
-CREATE TYPE "EmailProvider" AS ENUM ('SMTP');
-
 -- CreateTable
 CREATE TABLE "organization_settings" (
     "organization_id" BIGINT NOT NULL,
     "environment" "Environment" NOT NULL,
     "timezone" TEXT NOT NULL DEFAULT 'America/Toronto',
-    "email_provider" "EmailProvider" NOT NULL,
-    "email_provider_settings" JSONB NOT NULL,
+    "email_provider_settings" TEXT NOT NULL,
     "is_valid" BOOLEAN NOT NULL DEFAULT false,
     "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

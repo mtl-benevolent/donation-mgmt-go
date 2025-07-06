@@ -5,8 +5,20 @@ import (
 	"time"
 )
 
+type EmailProvider string
+
+var (
+	SMTPEmailProvider EmailProvider = "SMTP"
+)
+
+type EncryptedEmailProviderSettings struct {
+	Provider      EmailProvider `json:"provider"`
+	EncryptedSMTP *string       `json:"smtp"`
+}
+
 type EmailProviderSettings struct {
-	SMTP *SMTPSettings `json:"smtp"`
+	Provider EmailProvider `json:"provider"`
+	SMTP     *SMTPSettings `json:"smtp"`
 }
 
 type SMTPSettings struct {
@@ -19,11 +31,9 @@ type SMTPSettings struct {
 }
 
 type OrganizationSettings struct {
-	OrganizationID        int64
-	Environment           dal.Environment
-	Timezone              string
-	EmailProvider         dal.EmailProvider
-	EmailProviderSettings EmailProviderSettings
-	IsValid               bool
-	UpdatedAt             time.Time
+	OrganizationID int64
+	Environment    dal.Environment
+	Timezone       string
+	IsValid        bool
+	UpdatedAt      time.Time
 }
