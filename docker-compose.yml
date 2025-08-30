@@ -27,7 +27,7 @@ services:
       - postgres
     build:
       context: .
-      dockerfile: migrations.Dockerfile
+      dockerfile: ./docker/migrations.Dockerfile
     volumes:
       - ".:/build"
     environment:
@@ -42,12 +42,12 @@ services:
     networks:
       - donation-mgmt
 
-  donation-mgmt:
+  api:
     depends_on:
       - postgres
     build:
       context: .
-      dockerfile: api.Dockerfile
+      dockerfile: ./docker/api.Dockerfile
       target: build
     develop:
       watch:
@@ -81,12 +81,12 @@ services:
     networks:
       - donation-mgmt
 
-  donation-pdf-worker:
+  pdf-experiment:
     depends_on:
       - postgres
     build:
       context: .
-      dockerfile: pdf-worker.Dockerfile
+      dockerfile: ./docker/pdf-worker.Dockerfile
       args:
         - INSTALL_BROWSERS=1
       target: build
