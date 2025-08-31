@@ -12,10 +12,10 @@ type DonationModel struct {
 }
 
 type DonorAddress struct {
-	Line1      string
-	Line2      *string
-	City       string
-	State      string
-	PostalCode string
-	Country    *string
+	Line1      string  `json:"line1"`
+	Line2      *string `json:"line2,omitempty"`
+	City       string  `json:"city"`
+	State      string  `json:"state"`
+	PostalCode string  `json:"postalCode"`
+	Country    *string `json:"country,omitempty"`
 }

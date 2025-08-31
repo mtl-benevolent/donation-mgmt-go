@@ -17,15 +17,11 @@ CREATE TABLE "organization_templates" (
     "is_valid" BOOLEAN NOT NULL DEFAULT false,
     "no_mailing_addr_email" TEXT,
     "no_mail_addr_email_title" TEXT,
-    "no_mailing_addr_translations" JSONB NOT NULL,
     "no_mailing_addr_reminder_email" TEXT,
     "no_mailing_addr_reminder_email_title" TEXT,
-    "no_mailing_addr_reminder_translations" JSONB NOT NULL,
     "receipt_pdf" TEXT,
-    "receipt_pdf_translations" JSONB NOT NULL,
     "receipt_email" TEXT,
     "receipt_email_title" TEXT,
-    "receipt_email_translations" JSONB NOT NULL,
     "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "organization_templates_pkey" PRIMARY KEY ("organization_id","environment")

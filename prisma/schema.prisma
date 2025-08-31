@@ -40,8 +40,6 @@ model OrganizationSettings {
   // Encrypted settings, in JSON format
   email_provider_settings String
 
-  is_valid Boolean @default(false)
-
   updated_at DateTime @default(now()) @db.Timestamptz()
 
   @@id([organization_id, environment])
@@ -54,26 +52,20 @@ model OrganizationTemplates {
 
   environment Environment
 
-  is_valid Boolean @default(false)
-
   // Used when an electronic donation comes in with no Mailing Address
   no_mailing_addr_email        String?
   no_mail_addr_email_title     String?
-  no_mailing_addr_translations Json
 
   // Used to remind a user that we need a donor's Mailing Address before we can emit a receipt
   no_mailing_addr_reminder_email        String?
   no_mailing_addr_reminder_email_title  String?
-  no_mailing_addr_reminder_translations Json
 
   // PDF receipt template
   receipt_pdf              String?
-  receipt_pdf_translations Json
 
   // Email template when sending a generated receipt
   receipt_email              String?
   receipt_email_title        String?
-  receipt_email_translations Json
 
   updated_at DateTime @default(now()) @db.Timestamptz()
 

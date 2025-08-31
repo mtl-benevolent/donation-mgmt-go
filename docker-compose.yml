@@ -81,12 +81,12 @@ services:
     networks:
       - donation-mgmt
 
-  pdf-experiment:
+  worker:
     depends_on:
       - postgres
     build:
       context: .
-      dockerfile: ./docker/pdf-worker.Dockerfile
+      dockerfile: ./docker/worker.Dockerfile
       args:
         - INSTALL_BROWSERS=1
       target: build
